@@ -27,21 +27,22 @@ import com.typesafe.scalalogging.slf4j.Logging
 private[datastax] class DSSession(jSession: JSession) extends Session with Logging {
 
   def execute(query: String): Future[List[Row]] = {
-    val p = promise[List[Row]]
+    val asyncResult = promise[List[Row]]
 
     val resultSetFuture = jSession.executeAsync(query)
 
     Futures.addCallback(resultSetFuture, new FutureCallback[ResultSet] {
       def onFailure(t: Throwable) {
-        p.failure(t)
+        asyncResult.failure(t)
       }
 
       def onSuccess(result: ResultSet) {
-        p.success(new JListWrapper(result.all()).map(r => new DSRow(r)).toList)
+        asyncResult.success(
+          new JListWrapper(result.all()).map(r => new DSRow(r)).toList)
       }
     })
 
-    p.future
+    asyncResult.future
   }
 
   def close(timeout: Duration): Boolean = {

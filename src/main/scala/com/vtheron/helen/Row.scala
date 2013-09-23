@@ -18,12 +18,13 @@ package com.vtheron.helen
 import java.util.{UUID, Date}
 import java.nio.ByteBuffer
 import java.net.InetAddress
+import scala.reflect.ClassTag
 
 trait Row {
 
-//  def containsColumn(name: String): Boolean
-//
-//  def columnCount: Int
+  //  def containsColumn(name: String): Boolean
+  //
+  //  def columnCount: Int
 
   def isIndexNull(i: Int): Boolean
 
@@ -61,21 +62,21 @@ trait Row {
 
   def getColumnAsInt(name: String): Int
 
-  def getIndexAsList[A](i: Int)(implicit m: Manifest[A]): List[A]
+  def getIndexAsList[A: ClassTag](i: Int): List[A]
 
-  def getColumnAsList[A](name: String)(implicit m: Manifest[A]): List[A]
+  def getColumnAsList[A: ClassTag](name: String): List[A]
 
   def getIndexAsLong(i: Int): Long
 
   def getColumnAsLong(name: String): Long
 
-  def getIndexAsMap[K, V](i: Int)(implicit km: Manifest[K], vm: Manifest[V]): Map[K, V]
+  def getIndexAsMap[K: ClassTag, V: ClassTag](i: Int): Map[K, V]
 
-  def getColumnAsMap[K, V](name: String)(implicit km: Manifest[K], vm: Manifest[V]): Map[K, V]
+  def getColumnAsMap[K: ClassTag, V: ClassTag](name: String): Map[K, V]
 
-  def getIndexAsSet[A](i: Int)(implicit m: Manifest[A]): Set[A]
+  def getIndexAsSet[A: ClassTag](i: Int): Set[A]
 
-  def getColumnAsSet[A](name: String)(implicit m: Manifest[A]): Set[A]
+  def getColumnAsSet[A: ClassTag](name: String): Set[A]
 
   def getIndexAsString(i: Int): String
 
@@ -88,9 +89,5 @@ trait Row {
   def getIndexAsBigInt(i: Int): BigInt
 
   def getColumnAsBigInt(name: String): BigInt
-
-//  def getIndexAs[A](index: Int)(implicit m: Manifest[A]): Try[A]
-//
-//  def getColumnAs[A](name: String)(implicit m: Manifest[A]): Try[A]
 
 }

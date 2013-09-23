@@ -21,7 +21,7 @@ import java.nio.ByteBuffer
 import scala.collection.JavaConversions._
 import java.net.InetAddress
 import com.vtheron.helen.Row
-import scala.util.Try
+import scala.reflect.{ClassTag, classTag}
 
 private[datastax] class DSRow(jRow: JRow) extends Row {
 
@@ -61,27 +61,27 @@ private[datastax] class DSRow(jRow: JRow) extends Row {
 
   def getColumnAsInt(name: String): Int = jRow.getInt(name)
 
-  def getIndexAsList[A](i: Int)(implicit m: Manifest[A]): List[A] =
-    jRow.getList(i, m.runtimeClass.asInstanceOf[Class[A]]).toList
+  def getIndexAsList[A: ClassTag](i: Int): List[A] =
+    jRow.getList(i, classTag[A].runtimeClass.asInstanceOf[Class[A]]).toList
 
-  def getColumnAsList[A](name: String)(implicit m: Manifest[A]): List[A] =
-    jRow.getList(name, m.runtimeClass.asInstanceOf[Class[A]]).toList
+  def getColumnAsList[A: ClassTag](name: String): List[A] =
+    jRow.getList(name, classTag[A].runtimeClass.asInstanceOf[Class[A]]).toList
 
   def getIndexAsLong(i: Int): Long = jRow.getLong(i)
 
   def getColumnAsLong(name: String): Long = jRow.getLong(name)
 
-  def getIndexAsMap[K, V](i: Int)(implicit km: Manifest[K], vm: Manifest[V]): Map[K, V] =
-    jRow.getMap(i, km.runtimeClass.asInstanceOf[Class[K]], vm.runtimeClass.asInstanceOf[Class[V]]).toMap
+  def getIndexAsMap[K: ClassTag, V: ClassTag](i: Int): Map[K, V] =
+    jRow.getMap(i, classTag[K].runtimeClass.asInstanceOf[Class[K]], classTag[V].runtimeClass.asInstanceOf[Class[V]]).toMap
 
-  def getColumnAsMap[K, V](name: String)(implicit km: Manifest[K], vm: Manifest[V]): Map[K, V] =
-    jRow.getMap(name, km.runtimeClass.asInstanceOf[Class[K]], vm.runtimeClass.asInstanceOf[Class[V]]).toMap
+  def getColumnAsMap[K: ClassTag, V: ClassTag](name: String): Map[K, V] =
+    jRow.getMap(name, classTag[K].runtimeClass.asInstanceOf[Class[K]], classTag[V].runtimeClass.asInstanceOf[Class[V]]).toMap
 
-  def getIndexAsSet[A](i: Int)(implicit m: Manifest[A]): Set[A] =
-    jRow.getSet(i, m.runtimeClass.asInstanceOf[Class[A]]).toSet
+  def getIndexAsSet[A: ClassTag](i: Int): Set[A] =
+    jRow.getSet(i, classTag[A].runtimeClass.asInstanceOf[Class[A]]).toSet
 
-  def getColumnAsSet[A](name: String)(implicit m: Manifest[A]): Set[A] =
-    jRow.getSet(name, m.runtimeClass.asInstanceOf[Class[A]]).toSet
+  def getColumnAsSet[A: ClassTag](name: String): Set[A] =
+    jRow.getSet(name, classTag[A].runtimeClass.asInstanceOf[Class[A]]).toSet
 
   def getIndexAsString(i: Int): String = jRow.getString(i)
 
