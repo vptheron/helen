@@ -1,71 +1,81 @@
 package com.vtheron.helen
 
-import com.datastax.driver.core.{Row => JRow}
-import java.util.Date
+import java.util.{UUID, Date}
 import java.nio.ByteBuffer
-import scala.collection.JavaConversions._
+import java.net.InetAddress
 
-class Row private[helen](jRow: JRow) {
+trait Row {
 
-  def isIndexNull(i: Int): Boolean = jRow.isNull(i)
+  def containsColumn(name: String): Boolean
 
-  def isColumnNull(name: String): Boolean = jRow.isNull(name)
+  def columnCount: Int
 
-  def getIndexAsBool(i: Int): Boolean = jRow.getBool(i)
+  def isIndexNull(i: Int): Boolean
 
-  def getColumnAsBool(name: String): Boolean = jRow.getBool(name)
+  def isColumnNull(name: String): Boolean
 
-  def getIndexAsInt(i: Int): Int = jRow.getInt(i)
+  def getIndexAsBool(i: Int): Boolean
 
-  def getColumnAsInt(name: String): Int = jRow.getInt(name)
+  def getColumnAsBool(name: String): Boolean
 
-  def getIndexAsLong(i: Int): Long = jRow.getLong(i)
+  def getIndexAsBytes(i: Int): ByteBuffer
 
-  def getColumnAsLong(name: String): Long = jRow.getLong(name)
+  def getColumnAsBytes(name: String): ByteBuffer
 
-  def getIndexAsDate(i: Int): Date = jRow.getDate(i)
+  def getIndexAsDate(i: Int): Date
 
-  def getColumnAsDate(name: String): Date = jRow.getDate(name)
+  def getColumnAsDate(name: String): Date
 
-  def getIndexAsFloat(i: Int): Float = jRow.getFloat(i)
+  def getIndexAsBigDecimal(i: Int): BigDecimal
 
-  def getColumnAsFloat(name: String): Float = jRow.getFloat(name)
+  def getColumnAsBigDecimal(name: String): BigDecimal
 
-  def getIndexAsDouble(i: Int): Double = jRow.getDouble(i)
+  def getIndexAsDouble(i: Int): Double
 
-  def getColumnAsDouble(name: String): Double = jRow.getDouble(name)
+  def getColumnAsDouble(name: String): Double
 
-  def getIndexAsBytes(i: Int): ByteBuffer = jRow.getBytes(i)
+  def getIndexAsFloat(i: Int): Float
 
-  def getColumnAsBytes(name: String): ByteBuffer = jRow.getBytes(name)
+  def getColumnAsFloat(name: String): Float
 
-  def getIndexAsString(i: Int): String = jRow.getString(i)
+  def getIndexAsInetAddress(i: Int): InetAddress
 
-  def getColumnAsString(name: String): String = jRow.getString(name)
+  def getColumnAsInetAddress(name: String): InetAddress
 
-  def getIndexAsBigInt(i: Int): BigInt = BigInt(jRow.getVarint(i))
+  def getIndexAsInt(i: Int): Int
 
-  def getColumnAsBigInt(name: String): BigInt = BigInt(jRow.getVarint(name))
+  def getColumnAsInt(name: String): Int
 
-  def getIndexAsBigDecimal(i: Int): BigDecimal = BigDecimal(jRow.getDecimal(i))
+  def getIndexAsList[A](i: Int)(implicit m: Manifest[A]): List[A]
 
-  def getColumnAsBigDecimal(name: String): BigDecimal = BigDecimal(jRow.getDecimal(name))
+  def getColumnAsList[A](name: String)(implicit m: Manifest[A]): List[A]
 
-  def getIndexAsList[A](i: Int)(implicit m: Manifest[A]): List[A] =
-    jRow.getList(i, m.runtimeClass.asInstanceOf[Class[A]]).toList
+  def getIndexAsLong(i: Int): Long
 
-  def getColumnAsList[A](name: String)(implicit m: Manifest[A]): List[A] =
-    jRow.getList(name, m.runtimeClass.asInstanceOf[Class[A]]).toList
+  def getColumnAsLong(name: String): Long
 
-  def getIndexAsSet[A](i: Int)(implicit m: Manifest[A]): Set[A] =
-    jRow.getSet(i, m.runtimeClass.asInstanceOf[Class[A]]).toSet
+  def getIndexAsMap[K, V](i: Int)(implicit km: Manifest[K], vm: Manifest[V]): Map[K, V]
 
-  def getColumnAsSet[A](name: String)(implicit m: Manifest[A]): Set[A] =
-    jRow.getSet(name, m.runtimeClass.asInstanceOf[Class[A]]).toSet
+  def getColumnAsMap[K, V](name: String)(implicit km: Manifest[K], vm: Manifest[V]): Map[K, V]
 
-  def getIndexAsMap[K, V](i: Int)(implicit km: Manifest[K], vm: Manifest[V]): Map[K, V] =
-    jRow.getMap(i, km.runtimeClass.asInstanceOf[Class[K]], vm.runtimeClass.asInstanceOf[Class[V]]).toMap
+  def getIndexAsSet[A](i: Int)(implicit m: Manifest[A]): Set[A]
 
-  def getColumnAsMap[K, V](name: String)(implicit km: Manifest[K], vm: Manifest[V]): Map[K, V] =
-    jRow.getMap(name, km.runtimeClass.asInstanceOf[Class[K]], vm.runtimeClass.asInstanceOf[Class[V]]).toMap
+  def getColumnAsSet[A](name: String)(implicit m: Manifest[A]): Set[A]
+
+  def getIndexAsString(i: Int): String
+
+  def getColumnAsString(name: String): String
+
+  def getIndexAsUUID(i: Int): UUID
+
+  def getColumnAsUUID(name: String): UUID
+
+  def getIndexAsBigInt(i: Int): BigInt
+
+  def getColumnAsBigInt(name: String): BigInt
+
+//  def getIndexAs[A](index: Int)(implicit m: Manifest[A]): Try[A]
+//
+//  def getColumnAs[A](name: String)(implicit m: Manifest[A]): Try[A]
+
 }
