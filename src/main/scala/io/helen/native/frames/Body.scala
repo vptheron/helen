@@ -19,8 +19,6 @@ import akka.util.{ByteIterator, ByteStringBuilder, ByteString}
 
 object Body {
 
-  implicit private val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
-
   def string(s: String): ByteString = {
     val sAsBytes = ByteString.fromString(s)
     new ByteStringBuilder()

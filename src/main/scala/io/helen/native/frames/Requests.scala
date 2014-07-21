@@ -19,8 +19,6 @@ import akka.util.{ByteStringBuilder, ByteString}
 
 object Requests {
 
-  implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
-
   def startup(stream: Byte): RawFrame = {
     val body = Body.stringMap(Map("CQL_VERSION" -> "3.0.0"))
     RawFrame(0x02, 0x00, stream, 0x01, body)

@@ -24,7 +24,7 @@ case class RawFrame(version: Byte,
                     body: ByteString) {
 
   def toData: ByteString = {
-    implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
+
 
     new ByteStringBuilder()
       .putByte(version)

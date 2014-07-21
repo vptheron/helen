@@ -19,7 +19,6 @@ import akka.util.ByteString
 
 object Responses {
 
-  implicit private val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
   import Body._
 
   def fromData(data: ByteString): Response = {
