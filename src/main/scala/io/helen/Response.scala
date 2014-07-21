@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2013 Vincent Theron
+ *      Copyright (C) 2014 Vincent Theron
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -13,15 +13,6 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package com.vtheron.helen
+package io.helen
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.Future
-
-trait Session {
-
-  def execute(query: String): Future[List[Row]]
-
-  def close(timeout: Duration): Boolean
-
-}
+case class Response(opsCode: Byte)

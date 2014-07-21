@@ -13,13 +13,10 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package com.vtheron.helen
+package io.helen
 
-import scala.concurrent.duration.Duration
+trait CassandraDriver {
 
-trait Cluster {
+  def connect(host: String, port: Int): Client
 
-  def openSession(keySpace: Option[String] = None): Session
-
-  def shutdown(timeout: Duration): Boolean
 }

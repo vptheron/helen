@@ -1,4 +1,4 @@
-//      Copyright (C) 2013 Vincent Theron
+//      Copyright (C) 2014 Vincent Theron
 //
 //   Licensed under the Apache License, Version 2.0 (the "License");
 //   you may not use this file except in compliance with the License.
@@ -14,14 +14,10 @@
 
 name := "Helen"
 
-version := "1.0.0-SNAPSHOT"
+version := "0.1.0-SNAPSHOT"
 
-scalaVersion := "2.10.2"
+scalaVersion := "2.11.1"
 
-libraryDependencies += "com.datastax.cassandra" % "cassandra-driver-core" % "1.0.3"
-
-libraryDependencies += "com.typesafe" % "scalalogging-slf4j_2.10" % "1.0.1"
-
-libraryDependencies += "org.specs2" % "specs2_2.10" % "2.2" % "test"
-
-libraryDependencies += "org.mockito" % "mockito-core" % "1.9.5" % "test"
+libraryDependencies ++= Seq(
+  "com.typesafe.akka" %% "akka-actor" % "2.3.4"
+)

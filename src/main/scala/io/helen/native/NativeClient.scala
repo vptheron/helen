@@ -13,26 +13,29 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package com.vtheron.helen.datastax
+package io.helen.native
 
-import org.specs2.mock.Mockito
-import org.specs2.mutable.Specification
-import com.datastax.driver.core.{Row => JRow}
-import scala.collection.convert.WrapAsJava._
+import java.util.concurrent.TimeUnit
 
-class DSRowSpec extends Specification with Mockito {
+import akka.actor.ActorRef
+import akka.pattern.ask
+import akka.util.Timeout
+import io.helen.{Response => HResponse, Client}
 
-  "A DSRow" should {
+import scala.concurrent.Future
 
-    "be able to return a List of the appropriate class" in {
-      val jRow = mock[JRow]
-      jRow.getList(42, classOf[Int]) returns seqAsJavaList(List(1, 2, 3))
+private[native] class NativeClient(actor: ActorRef) extends Client {
 
-      val row = new DSRow(jRow)
+  import ConnectionActor._
 
-      row.getIndexAsList[Int](42) must beEqualTo(List(1,2,3))
-    }
+  implicit val timeout = Timeout(2, TimeUnit.SECONDS)
 
-  }
+  override def query(q: String): Future[HResponse] =
+    (actor ? Query(q)).mapTo[HResponse]
 
+  private[native] def connect(): Future[Unit] =
+    (actor ? Initialize).mapTo[Unit]
+
+  override def close(): Future[Unit] =
+    (actor ? Close).mapTo[Unit]
 }
