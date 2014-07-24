@@ -19,24 +19,26 @@ import akka.util.{ByteStringBuilder, ByteString}
 
 object Requests {
 
-  def startup(stream: Byte): RawFrame = {
+  def startup(stream: Byte): ByteString = {
     val body = Body.stringMap(Map("CQL_VERSION" -> "3.0.0"))
-    RawFrame(0x02, 0x00, stream, 0x01, body)
+    toBytes(RawFrame(0x02, 0x00, stream, 0x01, body))
   }
 
-  def register(stream: Byte): RawFrame = {
+  def register(stream: Byte): ByteString = {
     val body = Body.stringList(List("TOPOLOGY_CHANGE", "STATUS_CHANGE", "SCHEMA_CHANGE"))
-    RawFrame(0x02, 0x00, stream, 0x0B, body)
+    toBytes(RawFrame(0x02, 0x00, stream, 0x0B, body))
   }
 
-  def query(stream: Byte, query: String): RawFrame = {
+  def query(stream: Byte,
+            query: String,
+            consistency: Short = 0x0001): ByteString = {
     val queryAsBytes = ByteString.fromString(query)
     val body = new ByteStringBuilder
     body.putInt(queryAsBytes.length).append(queryAsBytes)
-      .putShort(0x0001)
+      .putShort(consistency)
       .putByte(0x00)
 
-    RawFrame(0x02, 0x00, stream, 0x07, body.result())
+    toBytes(RawFrame(0x02, 0x00, stream, 0x07, body.result()))
   }
 
 }

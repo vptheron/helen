@@ -38,7 +38,7 @@ class ConnectionActor(host: String, port: Int) extends Actor {
     case Tcp.Connected(_, _) =>
       val connection = sender()
       connection ! Tcp.Register(self)
-      connection ! Tcp.Write(Requests.startup(0.toByte).toData)
+      connection ! Tcp.Write(Requests.startup(0.toByte))
       context.become(waitForReady(client, connection))
 
     case Tcp.CommandFailed(_: Tcp.Connect) =>
@@ -52,7 +52,7 @@ class ConnectionActor(host: String, port: Int) extends Actor {
       response match {
         case Responses.Ready(stream) =>
           println("CONNECTION READY!")
-          client ! Status.Success(Unit.box())
+          client ! Status.Success(Unit)
           context.become(waitForQuery(connection))
 
         case other =>
@@ -63,7 +63,7 @@ class ConnectionActor(host: String, port: Int) extends Actor {
 
   private def waitForQuery(connection: ActorRef): Receive = {
     case AQuery(q) =>
-      connection ! Tcp.Write(Requests.query(0.toByte, q).toData)
+      connection ! Tcp.Write(Requests.query(0.toByte, q))
       context.become(waitingForResponse(connection, sender()))
 
     case Close =>

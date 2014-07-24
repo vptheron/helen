@@ -38,7 +38,7 @@ class EventHandlerActor(host: String, port: Int) extends Actor {
     case Tcp.Connected(_, _) =>
       val connection = sender()
       connection ! Tcp.Register(self)
-      connection ! Tcp.Write(Requests.startup(0.toByte).toData)
+      connection ! Tcp.Write(Requests.startup(0.toByte))
       context.become(waitForReady(client, connection))
 
     case Tcp.CommandFailed(_: Tcp.Connect) =>
@@ -53,11 +53,11 @@ class EventHandlerActor(host: String, port: Int) extends Actor {
       response match {
         case Responses.Ready(0x00) =>
           println("FIRST READY!")
-          connection ! Tcp.Write(Requests.register(1.toByte).toData)
+          connection ! Tcp.Write(Requests.register(1.toByte))
 
         case Responses.Ready(0x01) =>
           println("REGISTERED!")
-          client ! Status.Success(Unit.box())
+          client ! Status.Success(Unit)
           context.become(waitForEvents(connection))
 
         case other =>
