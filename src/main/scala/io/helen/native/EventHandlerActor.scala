@@ -18,18 +18,18 @@ package io.helen.native
 import java.net.InetSocketAddress
 
 import akka.actor.{Props, Status, ActorRef, Actor}
-import akka.io.{IO, Tcp}
+import akka.io.{Tcp, IO}
 import io.helen.native.frames.{Responses, Requests}
-import io.helen.{Response => HResponse}
 
-class ConnectionActor(host: String, port: Int) extends Actor {
+class EventHandlerActor(host: String, port: Int) extends Actor {
 
-  import ConnectionActor.{Initialize, Close, Query => AQuery}
+  import EventHandlerActor.{Initialize, Close}
 
   implicit val sys = context.system
 
   def receive = {
     case Initialize =>
+      println("Initialize event handler")
       IO(Tcp) ! Tcp.Connect(new InetSocketAddress(host, port))
       context.become(waitForConnection(sender()))
   }
@@ -49,11 +49,16 @@ class ConnectionActor(host: String, port: Int) extends Actor {
   private def waitForReady(client: ActorRef, connection: ActorRef): Receive = {
     case Tcp.Received(data) =>
       val response = Responses.fromData(data)
+      println("Got: "+response)
       response match {
-        case Responses.Ready(stream) =>
-          println("CONNECTION READY!")
+        case Responses.Ready(0x00) =>
+          println("FIRST READY!")
+          connection ! Tcp.Write(Requests.register(1.toByte).toData)
+
+        case Responses.Ready(0x01) =>
+          println("REGISTERED!")
           client ! Status.Success(Unit.box())
-          context.become(waitForQuery(connection))
+          context.become(waitForEvents(connection))
 
         case other =>
           println("Nothing matched: " + other)
@@ -61,35 +66,23 @@ class ConnectionActor(host: String, port: Int) extends Actor {
       }
   }
 
-  private def waitForQuery(connection: ActorRef): Receive = {
-    case AQuery(q) =>
-      connection ! Tcp.Write(Requests.query(0.toByte, q).toData)
-      context.become(waitingForResponse(connection, sender()))
+  private def waitForEvents(connection: ActorRef): Receive = {
+    case Tcp.Received(data) =>
+      val event = Responses.fromData(data)
+      println("received: "+event)
 
     case Close =>
       connection ! Tcp.Close
   }
 
-  private def waitingForResponse(connection: ActorRef, client: ActorRef): Receive = {
-
-    case Tcp.Received(data) =>
-      val dataIt = data.iterator
-      val stream = dataIt.drop(2).getByte
-      val opsCode = dataIt.getByte
-      client ! HResponse(opsCode)
-      context.become(waitForQuery(connection))
-  }
-
 }
 
-object ConnectionActor {
+object EventHandlerActor {
 
-  def props(host: String, port: Int): Props = Props(new ConnectionActor(host, port))
+  def props(host: String, port: Int): Props = Props(new EventHandlerActor(host, port))
 
   case object Initialize
 
   case object Close
-
-  case class Query(q: String)
 
 }

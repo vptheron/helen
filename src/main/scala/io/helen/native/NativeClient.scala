@@ -22,19 +22,22 @@ import akka.pattern.ask
 import akka.util.Timeout
 import io.helen.{Response => HResponse, Client}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-private[native] class NativeClient(actor: ActorRef) extends Client {
+private[native] class NativeClient(actor: ActorRef, eventHandler: ActorRef) extends Client {
 
   import ConnectionActor._
 
-  implicit val timeout = Timeout(2, TimeUnit.SECONDS)
+  implicit val timeout = Timeout(5, TimeUnit.SECONDS)
 
   override def query(q: String): Future[HResponse] =
     (actor ? Query(q)).mapTo[HResponse]
 
-  private[native] def connect(): Future[Unit] =
-    (actor ? Initialize).mapTo[Unit]
+  private[native] def connect(implicit ec: ExecutionContext): Future[Unit] =
+    for {
+      _ <- actor ? Initialize
+      _ <- eventHandler ? EventHandlerActor.Initialize
+    } yield Unit
 
   override def close(): Future[Unit] =
     (actor ? Close).mapTo[Unit]

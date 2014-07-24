@@ -26,9 +26,10 @@ class NativeCassandraDriver(system: ActorSystem) extends CassandraDriver {
   implicit private val ec = system.dispatcher
 
   override def connect(host: String, port: Int): Client = {
-    val actor = system.actorOf(Props(classOf[ConnectionActor], host, port))
-    val client = new NativeClient(actor)
-    Await.result(client.connect(), Duration("5 seconds"))
+    val actor = system.actorOf(ConnectionActor.props(host, port))
+    val eventHandler = system.actorOf(EventHandlerActor.props(host, port))
+    val client = new NativeClient(actor, eventHandler)
+    Await.result(client.connect(ec), Duration("5 seconds"))
     client
   }
 

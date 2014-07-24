@@ -24,6 +24,11 @@ object Requests {
     RawFrame(0x02, 0x00, stream, 0x01, body)
   }
 
+  def register(stream: Byte): RawFrame = {
+    val body = Body.stringList(List("TOPOLOGY_CHANGE", "STATUS_CHANGE", "SCHEMA_CHANGE"))
+    RawFrame(0x02, 0x00, stream, 0x0B, body)
+  }
+
   def query(stream: Byte, query: String): RawFrame = {
     val queryAsBytes = ByteString.fromString(query)
     val body = new ByteStringBuilder

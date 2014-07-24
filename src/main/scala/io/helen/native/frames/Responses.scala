@@ -36,6 +36,17 @@ object Responses {
         Error(stream, errorCode, errorMessage)
 
       case 0x02 => Ready(stream)
+
+      case 0x0C =>
+        val eventType = readString(dataIt)
+        eventType  match {
+          case "TOPOLOGY_CHANGE" =>
+            TopologyChange(readString(dataIt))
+          case "STATUS_CHANGE" =>
+            StatusChange(readString(dataIt))
+          case "SCHEMA_CHANGE" =>
+            SchemaChange(readString(dataIt), readString(dataIt), readString(dataIt))
+        }
     }
   }
 
@@ -46,6 +57,14 @@ object Responses {
                    errorMessage: String) extends Response
 
   case class Ready(stream: Byte) extends Response
+
+  sealed trait Event extends Response
+
+  case class TopologyChange(change: String) extends Event
+
+  case class StatusChange(change: String) extends Event
+
+  case class SchemaChange(change: String, keyspace: String, table: String) extends Event
 
 }
 
