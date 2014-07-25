@@ -42,7 +42,7 @@ class ConnectionActor(host: String, port: Int) extends Actor {
       context.become(waitForReady(client, connection))
 
     case Tcp.CommandFailed(_: Tcp.Connect) =>
-      client ! Status.Failure(new Exception("Failed to connect to "+host))
+      client ! Status.Failure(new Exception("Failed to connect to " + host))
       context stop self
   }
 
@@ -73,10 +73,9 @@ class ConnectionActor(host: String, port: Int) extends Actor {
   private def waitingForResponse(connection: ActorRef, client: ActorRef): Receive = {
 
     case Tcp.Received(data) =>
-      val dataIt = data.iterator
-      val stream = dataIt.drop(2).getByte
-      val opsCode = dataIt.getByte
-      client ! HResponse(opsCode)
+      val resp = Responses.fromBytes(data)
+      println("RESPONSE: " + resp)
+      client ! HResponse(0)
       context.become(waitForQuery(connection))
   }
 

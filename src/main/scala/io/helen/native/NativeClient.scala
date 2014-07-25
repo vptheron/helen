@@ -36,7 +36,7 @@ private[native] class NativeClient(actor: ActorRef, eventHandler: ActorRef) exte
   private[native] def connect(implicit ec: ExecutionContext): Future[Unit] =
     for {
       _ <- actor ? Initialize
-      _ <- eventHandler ? EventHandlerActor.Initialize
+     // _ <- eventHandler ? EventHandlerActor.Initialize
     } yield Unit
 
   override def close(): Future[Unit] =

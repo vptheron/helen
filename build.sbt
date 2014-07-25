@@ -21,5 +21,6 @@ scalaVersion := "2.11.1"
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % "2.3.4"
+  "com.typesafe.akka" %% "akka-actor" % "2.3.4",
+  "com.datastax.cassandra" % "cassandra-driver-core" % "2.0.3"
 )

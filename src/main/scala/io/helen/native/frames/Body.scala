@@ -66,10 +66,15 @@ private[frames] object Body {
       .result()
   }
 
-  def readBytes(dataIterator: ByteIterator): ByteString = {
-    val buffer = new Array[Byte](dataIterator.getInt)
-    dataIterator.getBytes(buffer)
-    ByteString(buffer)
+  def readBytes(dataIterator: ByteIterator): Option[ByteString] = {
+    val size = dataIterator.getInt
+    if(size < 0)
+      None
+    else {
+      val buffer = new Array[Byte](size)
+      dataIterator.getBytes(buffer)
+      Some(ByteString(buffer))
+    }
   }
 
   def shortBytes(b: ByteString): ByteString = {

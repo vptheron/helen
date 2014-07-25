@@ -55,11 +55,15 @@ private[native] object Responses {
 
   private def parseRows(stream: Byte, dataIterator: ByteIterator): Rows = {
     val metadata = parseMetaData(dataIterator)
+    println("Extracted metadata: "+metadata)
     val rowsCount = dataIterator.getInt
-
-    val content = (0 until rowsCount) map { _ =>
-      (0 until metadata.columnsCount) map { _ =>
-        readBytes(dataIterator)
+    println("Row count: "+rowsCount)
+    val content = (0 until rowsCount) map { i =>
+      (0 until metadata.columnsCount) map { j =>
+        println("Reading "+i + " // "+j )
+        val value = readBytes(dataIterator)
+        println(value)
+        value
       }
     }
 
@@ -70,14 +74,14 @@ private[native] object Responses {
     val flags = dataIterator.getInt
     val columnsCount = dataIterator.getInt
 
-    val pagingStateOpt = if ((flags & 0x0002) == 1) Some(readBytes(dataIterator)) else None
+    val pagingStateOpt = if ( (flags & (1 << 1)) != 0 ) readBytes(dataIterator) else None
 
-    if ((flags & 0x0004) == 1) {
+    if ( (flags & (1 << 2)) != 0 ) {
       ResultMetadata(columnsCount, pagingStateOpt, None, Nil)
     } else {
 
       val globalTableSpecOpt =
-        if ((flags & 0x0001) == 1)
+        if ( (flags & (1 << 0)) != 0 )
           Some((readString(dataIterator), readString(dataIterator)))
         else
           None
@@ -132,7 +136,7 @@ private[native] object Responses {
 
   case class Void(stream: Byte) extends Result
 
-  case class Rows(stream: Byte, metadata: ResultMetadata, content: Seq[Seq[ByteString]]) extends Result
+  case class Rows(stream: Byte, metadata: ResultMetadata, content: Seq[Seq[Option[ByteString]]]) extends Result
 
   case class SetKeyspace(stream: Byte, keyspace: String) extends Result
 
