@@ -48,7 +48,7 @@ class EventHandlerActor(host: String, port: Int) extends Actor {
 
   private def waitForReady(client: ActorRef, connection: ActorRef): Receive = {
     case Tcp.Received(data) =>
-      val response = Responses.fromData(data)
+      val response = Responses.fromBytes(data)
       println("Got: "+response)
       response match {
         case Responses.Ready(0x00) =>
@@ -68,7 +68,7 @@ class EventHandlerActor(host: String, port: Int) extends Actor {
 
   private def waitForEvents(connection: ActorRef): Receive = {
     case Tcp.Received(data) =>
-      val event = Responses.fromData(data)
+      val event = Responses.fromBytes(data)
       println("received: "+event)
 
     case Close =>

@@ -17,16 +17,19 @@ package io.helen.native.frames
 
 import akka.util.{ByteStringBuilder, ByteString}
 
-object Requests {
+private[native] object Requests {
+
+  private val VERSION: Byte = 0x02
+  private val EMPTY_FLAG: Byte = 0x00
 
   def startup(stream: Byte): ByteString = {
     val body = Body.stringMap(Map("CQL_VERSION" -> "3.0.0"))
-    toBytes(RawFrame(0x02, 0x00, stream, 0x01, body))
+    toBytes(RawFrame(VERSION, EMPTY_FLAG, stream, 0x01, body))
   }
 
   def register(stream: Byte): ByteString = {
     val body = Body.stringList(List("TOPOLOGY_CHANGE", "STATUS_CHANGE", "SCHEMA_CHANGE"))
-    toBytes(RawFrame(0x02, 0x00, stream, 0x0B, body))
+    toBytes(RawFrame(VERSION, EMPTY_FLAG, stream, 0x0B, body))
   }
 
   def query(stream: Byte,
@@ -38,7 +41,7 @@ object Requests {
       .putShort(consistency)
       .putByte(0x00)
 
-    toBytes(RawFrame(0x02, 0x00, stream, 0x07, body.result()))
+    toBytes(RawFrame(VERSION, EMPTY_FLAG, stream, 0x07, body.result()))
   }
 
 }

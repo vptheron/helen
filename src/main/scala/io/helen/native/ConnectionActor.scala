@@ -48,7 +48,7 @@ class ConnectionActor(host: String, port: Int) extends Actor {
 
   private def waitForReady(client: ActorRef, connection: ActorRef): Receive = {
     case Tcp.Received(data) =>
-      val response = Responses.fromData(data)
+      val response = Responses.fromBytes(data)
       response match {
         case Responses.Ready(stream) =>
           println("CONNECTION READY!")

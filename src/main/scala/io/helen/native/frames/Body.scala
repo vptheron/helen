@@ -17,7 +17,7 @@ package io.helen.native.frames
 
 import akka.util.{ByteIterator, ByteStringBuilder, ByteString}
 
-object Body {
+private[frames] object Body {
 
   def string(s: String): ByteString = {
     val sAsBytes = ByteString.fromString(s)
@@ -41,11 +41,22 @@ object Body {
       .result()
   }
 
+  def readLongString(dataIterator: ByteIterator): String = {
+    val buffer = new Array[Byte](dataIterator.getInt)
+    dataIterator.getBytes(buffer)
+    ByteString(buffer).utf8String
+  }
+
   def stringList(ss: Seq[String]): ByteString = {
     val builder = new ByteStringBuilder()
       .putShort(ss.length)
     ss.foreach(s => builder.append(string(s)))
     builder.result()
+  }
+
+  def readStringList(dataIterator: ByteIterator): Seq[String] = {
+    val listLength = dataIterator.getShort
+    (0 until listLength).map(_ => readString(dataIterator))
   }
 
   def bytes(b: ByteString): ByteString = {
@@ -55,11 +66,23 @@ object Body {
       .result()
   }
 
+  def readBytes(dataIterator: ByteIterator): ByteString = {
+    val buffer = new Array[Byte](dataIterator.getInt)
+    dataIterator.getBytes(buffer)
+    ByteString(buffer)
+  }
+
   def shortBytes(b: ByteString): ByteString = {
     new ByteStringBuilder()
       .putShort(b.length)
       .append(b)
       .result()
+  }
+
+  def readShortBytes(dataIterator: ByteIterator): ByteString = {
+    val buffer = new Array[Byte](dataIterator.getShort)
+    dataIterator.getBytes(buffer)
+    ByteString(buffer)
   }
 
   def stringMap(m: Map[String, String]): ByteString = {
@@ -69,11 +92,49 @@ object Body {
     builder.result()
   }
 
+  def readStringMap(dataIterator: ByteIterator): Map[String, String] = {
+    val mapSize = dataIterator.getShort
+    (0 until mapSize)
+      .map(_ => readString(dataIterator) -> readString(dataIterator))
+      .toMap
+  }
+
   def stringMultiMap(m: Map[String, Seq[String]]): ByteString = {
     val builder = new ByteStringBuilder()
     builder.putShort(m.size)
     m.foreach(kv => builder.append(string(kv._1)).append(stringList(kv._2)))
     builder.result()
+  }
+
+  def readStringMultiMap(dataIterator: ByteIterator): Map[String, Seq[String]] = {
+    val mapSize = dataIterator.getShort
+    (0 until mapSize)
+      .map(_ => readString(dataIterator) -> readStringList(dataIterator))
+      .toMap
+  }
+
+  //FIXME need to find a good return type
+  def readOption(dataIterator: ByteIterator) {
+    val opt = dataIterator.getShort
+    opt match {
+      case 0x0000 =>
+        val value = readString(dataIterator)
+
+      case 0x0001 | 0x0002 | 0x0003 | 0x0004 |
+           0x0005 | 0x0006 | 0x0007 | 0x0008 |
+           0x0009 | 0x000A | 0x000B | 0x000C |
+           0x000D | 0x000E | 0x000F | 0x0010 => List(opt)
+
+      case 0x0020 =>
+        val t = readOption(dataIterator)
+
+      case 0x0021 =>
+        val keyType = readOption(dataIterator)
+        val valueType = readOption(dataIterator)
+
+      case 0x0022 =>
+        val t = readOption(dataIterator)
+    }
   }
 
 }
