@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2013 Vincent Theron
+ *      Copyright (C) 2014 Vincent Theron
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -13,32 +13,29 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package io.helen.native
+package io.helen.cql
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
-import io.helen.{Response => HResponse, Client}
+import io.helen.cql.Requests.Request
+import io.helen.cql.Responses.Response
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, Future}
 
-private[native] class NativeClient(actor: ActorRef, eventHandler: ActorRef) extends Client {
+class ActorBackedCqlClient(host: String, port: Int)
+                          (implicit system: ActorSystem) extends CqlClient {
 
   import ConnectionActor._
 
-  implicit val timeout = Timeout(5, TimeUnit.SECONDS)
+  private implicit val timeout = Timeout(10, TimeUnit.SECONDS)
+  private val actor = system.actorOf(ConnectionActor.props(host, port))
+  Await.ready(actor ? Initialize, timeout.duration)
 
-  override def query(q: String): Future[HResponse] =
-    (actor ? Query(q)).mapTo[HResponse]
+  override def send(request: Request): Future[Response] =
+    (actor ? request).mapTo[Response]
 
-  private[native] def connect(implicit ec: ExecutionContext): Future[Unit] =
-    for {
-      _ <- actor ? Initialize
-     // _ <- eventHandler ? EventHandlerActor.Initialize
-    } yield Unit
-
-  override def close(): Future[Unit] =
-    (actor ? Close).mapTo[Unit]
+  override def close(): Unit = actor ! Close
 }

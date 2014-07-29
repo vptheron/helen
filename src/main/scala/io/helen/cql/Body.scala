@@ -1,5 +1,5 @@
 /*
- *      Copyright (C) 2013 Vincent Theron
+ *      Copyright (C) 2014 Vincent Theron
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -13,11 +13,15 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package io.helen.native.frames
+package io.helen.cql
 
-import akka.util.{ByteIterator, ByteStringBuilder, ByteString}
+import java.net.{InetSocketAddress, InetAddress}
 
-private[frames] object Body {
+import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
+
+private[cql] object Body {
+
+  implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
 
   def string(s: String): ByteString = {
     val sAsBytes = ByteString.fromString(s)
@@ -68,13 +72,22 @@ private[frames] object Body {
 
   def readBytes(dataIterator: ByteIterator): Option[ByteString] = {
     val size = dataIterator.getInt
-    if(size < 0)
+    if (size < 0)
       None
     else {
       val buffer = new Array[Byte](size)
       dataIterator.getBytes(buffer)
       Some(ByteString(buffer))
     }
+  }
+
+  def readAddress(dataIterator: ByteIterator): InetSocketAddress = {
+    val size = dataIterator.getByte
+    val buffer = new Array[Byte](size)
+    dataIterator.getBytes(buffer)
+    val ip = InetAddress.getByAddress(buffer)
+    val port = dataIterator.getInt
+    new InetSocketAddress(ip, port)
   }
 
   def shortBytes(b: ByteString): ByteString = {

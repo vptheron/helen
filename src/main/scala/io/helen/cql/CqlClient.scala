@@ -13,6 +13,16 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package io.helen
+package io.helen.cql
 
-case class Response(opsCode: Byte)
+import io.helen.cql.Requests.Request
+import io.helen.cql.Responses.Response
+
+import scala.concurrent.Future
+
+trait CqlClient {
+
+  def send(request: Request): Future[Response]
+
+  def close(): Unit
+}
