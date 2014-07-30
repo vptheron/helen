@@ -49,14 +49,14 @@ private[cql] class ConnectionActor(host: String, port: Int) extends Actor {
     case req: Request =>
       val stream = availableStreams.head
       val frame = Frames.fromRequest(stream, req)
-      println("Actor: Sending " + req)
+//      println("Actor: Sending " + req)
       connection ! Tcp.Write(frame)
 
       context.become(ready(connection, availableStreams.tail, processing + (stream -> sender())))
 
     case Tcp.Received(data) =>
       val (stream, response) = Frames.fromBytes(data)
-      println("Actor: Received "+response)
+//      println("Actor: Received "+response)
       processing.get(stream).foreach(_ ! Status.Success(response))
 
       context.become(ready(connection, availableStreams + stream, processing - stream))

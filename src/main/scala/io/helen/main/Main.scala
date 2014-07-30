@@ -15,16 +15,23 @@
  */
 package io.helen.main
 
+import java.util.UUID
+
 import akka.actor.ActorSystem
-import io.helen.cql.{ActorBackedCqlClient, Requests}
+import akka.util.{ByteStringBuilder, ByteString}
+import io.helen.cql.Requests.{UnpreparedBatchQuery, LoggedBatch, QueryParameters}
+import io.helen.cql.Responses.Prepared
+import io.helen.cql.{Body, CqlClient, ActorBackedCqlClient, Requests}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object Main {
 
+  private val timeout = Duration("5 seconds")
+
+
   def main(args: Array[String]) {
-    val timeout = Duration("10 seconds")
 
     val system = ActorSystem("helen-system")
 
@@ -32,6 +39,28 @@ object Main {
 
     println(Await.result(client.send(Requests.Startup), timeout))
 
+    //    setupKeyspaceTable(client)
+
+    //    useOptions(client)
+
+    //    insertWithPrepareExecute(client)
+
+//    selectWithValues(client)
+//    selectWithPrepare(client)
+
+    batchInsert(client)
+
+    selectAll(client)
+
+    client.close()
+    system.shutdown()
+  }
+
+  private def useOptions(client: CqlClient) {
+    println(Await.result(client.send(Requests.Options), timeout))
+  }
+
+  private def setupKeyspaceTable(client: CqlClient) {
     println(Await.result(
       client.send(
         Requests.Query("CREATE KEYSPACE demodb WITH REPLICATION = {'class' : 'SimpleStrategy','replication_factor': 1}")),
@@ -41,18 +70,90 @@ object Main {
       client.send(
         Requests.Query("CREATE TABLE demodb.songs (id uuid PRIMARY KEY, title text, album text, artist text, tags set<text>, data blob)")),
       timeout))
+  }
 
-    println(Await.result(
+  private def insertWithPrepareExecute(client: CqlClient) {
+    val prepared = Await.result(
       client.send(
-        Requests.Query("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (756716f7-2e54-4715-9f00-91dcbea6cf50, 'La Petite Tonkinoise', 'Bye Bye Blackbird', 'Joséphine Baker', {'jazz', '2013'})")),
-      timeout))
+        Requests.Prepare("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (?, ?, ?, ?, ?)")),
+      timeout).asInstanceOf[Prepared]
 
-    println(Await.result(
+    println(prepared)
+
+    val boundValues = List(
+      uuid(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")),
+      ByteString.fromString("La Petite Tonkinoise"),
+      ByteString.fromString("Bye Bye Blackbird"),
+      ByteString.fromString("Josephine Baker"),
+      set(Set(ByteString.fromString("jazz"), ByteString.fromString("2013")))
+    )
+    val execute = Requests.Execute(prepared.id, QueryParameters(values = boundValues))
+
+    println(Await.result(client.send(execute), timeout))
+  }
+
+  private def selectWithValues(client: CqlClient) {
+    val boundValues = List(uuid(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")))
+
+    println(
+      Await.result(
+        client.send(Requests.Query("SELECT * FROM demodb.songs WHERE id = ?", QueryParameters(values = boundValues))),
+        timeout)
+    )
+  }
+
+  private def batchInsert(client: CqlClient) {
+    val queries = List(
+      UnpreparedBatchQuery("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (999716f7-2e54-4715-9f00-91dcbea6cf50, 'hello', 'world', 'author', {'rock', '2014'})", Nil),
+      UnpreparedBatchQuery("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (888716f7-2e54-4715-9f00-91dcbea6cf50, 'hello1', 'world1', 'author1', {'rock', '2014'})", Nil)
+    )
+    println(
+      Await.result(
+        client.send(Requests.Batch(LoggedBatch, queries)),
+        timeout)
+    )
+  }
+
+  private def selectAll(client: CqlClient) {
+    println(
+      Await.result(
+        client.send(Requests.Query("SELECT * FROM demodb.songs")),
+        timeout)
+    )
+  }
+
+  private def selectWithPrepare(client: CqlClient) {
+    val prepared = Await.result(
       client.send(
-        Requests.Query("SELECT id, title, artist FROM demodb.songs")),
-      timeout))
+        Requests.Prepare("SELECT * FROM demodb.songs WHERE id = ?")),
+      timeout).asInstanceOf[Prepared]
 
-    client.close()
+    println(prepared)
+
+    val boundValues = List(
+      uuid(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50"))
+    )
+
+    val execute = Requests.Execute(prepared.id, QueryParameters(values = boundValues))
+
+    println(Await.result(client.send(execute), timeout))
+  }
+
+  import Body.byteOrder
+
+  private def uuid(id: UUID): ByteString = {
+    new ByteStringBuilder()
+      .putLong(id.getMostSignificantBits)
+      .putLong(id.getLeastSignificantBits)
+      .result()
+  }
+
+  def set(s: Set[ByteString]): ByteString = {
+    val builder = new ByteStringBuilder()
+      .putShort(s.size)
+
+    s.foreach(v => builder.append(Body.shortBytes(v)))
+    builder.result()
   }
 
 }

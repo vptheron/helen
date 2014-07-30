@@ -19,7 +19,7 @@ import java.net.{InetSocketAddress, InetAddress}
 
 import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
-private[cql] object Body {
+object Body {
 
   implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
 
