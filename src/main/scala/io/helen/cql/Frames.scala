@@ -32,7 +32,7 @@ private[cql] object Frames {
         case Query(q, params) => (0x07, serializeQuery(q, params))
         case Prepare(query) => (0x09, Body.longString(query))
         case Execute(id, params) => (0x0A, serializeExecute(id, params))
-        case Batch(batchType, queries, consistency) => (0x0D, serializeBatch(batchType, queries, consistency))
+        case Batch(queries, batchType, consistency) => (0x0D, serializeBatch(batchType, queries, consistency))
         case Register(topology, status, schema) => (0x0B, serializeRegister(topology, status, schema))
       }
 
@@ -164,9 +164,9 @@ private[cql] object Frames {
     val metadata = parseMetaData(dataIterator)
     val rowsCount = dataIterator.getInt
     val content = (0 until rowsCount) map {
-      i =>
+      _ =>
         (0 until metadata.columnsCount) map {
-          j =>
+          _ =>
             readBytes(dataIterator)
         }
     }
@@ -199,11 +199,37 @@ private[cql] object Frames {
               (Some(readString(dataIterator)), Some(readString(dataIterator)))
 
           val columnName = readString(dataIterator)
-          readOption(dataIterator)
-          ColumnSpec(ksNameOpt, tableNameOpt, columnName)
+          val dataType = parseType(dataIterator)
+          ColumnSpec(ksNameOpt, tableNameOpt, columnName, dataType)
       }
 
       Metadata(columnsCount, pagingStateOpt, globalTableSpecOpt, columnSpecs)
+    }
+  }
+
+  private def parseType(dataIterator: ByteIterator): ColumnType = {
+    val typeId = dataIterator.getShort
+    typeId match {
+      case 0x0000 => CustomType(readString(dataIterator))
+      case 0x0001 => AsciiType
+      case 0x0002 => BigIntType
+      case 0x0003 => BlobType
+      case 0x0004 => BooleanType
+      case 0x0005 => CounterType
+      case 0x0006 => DecimalType
+      case 0x0007 => DoubleType
+      case 0x0008 => FloatType
+      case 0x0009 => IntType
+      case 0x000A => TextType
+      case 0x000B => TimestampType
+      case 0x000C => UuidType
+      case 0x000D => VarcharType
+      case 0x000E => VarintType
+      case 0x000F => TimeuuidType
+      case 0x0010 => InetType
+      case 0x0020 => ListType(parseType(dataIterator))
+      case 0x0021 => MapType(parseType(dataIterator), parseType(dataIterator))
+      case 0x0022 => SetType(parseType(dataIterator))
     }
   }
 

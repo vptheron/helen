@@ -16,6 +16,7 @@
 package io.helen.cql
 
 import java.net.{InetSocketAddress, InetAddress}
+import java.util.UUID
 
 import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
@@ -51,6 +52,16 @@ object Body {
     ByteString(buffer).utf8String
   }
 
+  def uuid(id: UUID): ByteString = {
+    new ByteStringBuilder()
+      .putLong(id.getMostSignificantBits)
+      .putLong(id.getLeastSignificantBits)
+      .result()
+  }
+
+  def readUuid(dataIterator: ByteIterator): UUID =
+    new UUID(dataIterator.getLong, dataIterator.getLong)
+
   def stringList(ss: Seq[String]): ByteString = {
     val builder = new ByteStringBuilder()
       .putShort(ss.length)
@@ -81,15 +92,6 @@ object Body {
     }
   }
 
-  def readAddress(dataIterator: ByteIterator): InetSocketAddress = {
-    val size = dataIterator.getByte
-    val buffer = new Array[Byte](size)
-    dataIterator.getBytes(buffer)
-    val ip = InetAddress.getByAddress(buffer)
-    val port = dataIterator.getInt
-    new InetSocketAddress(ip, port)
-  }
-
   def shortBytes(b: ByteString): ByteString = {
     new ByteStringBuilder()
       .putShort(b.length)
@@ -101,6 +103,26 @@ object Body {
     val buffer = new Array[Byte](dataIterator.getShort)
     dataIterator.getBytes(buffer)
     ByteString(buffer)
+  }
+
+  //TODO option
+
+  //TODO option list
+
+  def address(a: InetSocketAddress): ByteString = {
+    val ip = a.getAddress.getAddress
+    new ByteStringBuilder()
+      .putByte(ip.length.toByte)
+      .putBytes(ip)
+      .putInt(a.getPort)
+      .result()
+  }
+
+  def readAddress(dataIterator: ByteIterator): InetSocketAddress = {
+    val buffer = new Array[Byte](dataIterator.getByte)
+    dataIterator.getBytes(buffer)
+    val ip = InetAddress.getByAddress(buffer)
+    new InetSocketAddress(ip, dataIterator.getInt)
   }
 
   def stringMap(m: Map[String, String]): ByteString = {
@@ -129,30 +151,6 @@ object Body {
     (0 until mapSize)
       .map(_ => readString(dataIterator) -> readStringList(dataIterator))
       .toMap
-  }
-
-  //FIXME need to find a good return type
-  def readOption(dataIterator: ByteIterator) {
-    val opt = dataIterator.getShort
-    opt match {
-      case 0x0000 =>
-        val value = readString(dataIterator)
-
-      case 0x0001 | 0x0002 | 0x0003 | 0x0004 |
-           0x0005 | 0x0006 | 0x0007 | 0x0008 |
-           0x0009 | 0x000A | 0x000B | 0x000C |
-           0x000D | 0x000E | 0x000F | 0x0010 => List(opt)
-
-      case 0x0020 =>
-        val t = readOption(dataIterator)
-
-      case 0x0021 =>
-        val keyType = readOption(dataIterator)
-        val valueType = readOption(dataIterator)
-
-      case 0x0022 =>
-        val t = readOption(dataIterator)
-    }
   }
 
 }

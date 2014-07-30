@@ -35,8 +35,8 @@ object Requests {
   case class Execute(preparedId: ByteString,
                      parameters: QueryParameters = QueryParameters()) extends Request
 
-  case class Batch(batchType: BatchType,
-                   queries: Seq[BatchQuery],
+  case class Batch(queries: Seq[BatchQuery],
+                   batchType: BatchType = LoggedBatch,
                    consistency: Consistency = One) extends Request
 
   case class Register(topologyChange: Boolean = false,

@@ -50,7 +50,7 @@ object Responses {
                             node: InetSocketAddress) extends Event
 
   case class StatusChange(nodeUp: Boolean,
-                           node: InetSocketAddress) extends Event
+                          node: InetSocketAddress) extends Event
 
   case class SchemaChange(change: Change,
                           keyspace: String,
@@ -62,7 +62,8 @@ object Responses {
 
   case class ColumnSpec(keyspaceName: Option[String],
                         tableName: Option[String],
-                        columnName: String)
+                        columnName: String,
+                        columnType: ColumnType)
 
   case class Metadata(columnsCount: Int,
                       pagingStage: Option[ByteString],
@@ -76,6 +77,48 @@ object Responses {
   case object Updated extends Change
 
   case object Dropped extends Change
+
+  sealed trait ColumnType
+
+  case class CustomType(value: String) extends ColumnType
+
+  case object AsciiType extends ColumnType
+
+  case object BigIntType extends ColumnType
+
+  case object BlobType extends ColumnType
+
+  case object BooleanType extends ColumnType
+
+  case object CounterType extends ColumnType
+
+  case object DecimalType extends ColumnType
+
+  case object DoubleType extends ColumnType
+
+  case object FloatType extends ColumnType
+
+  case object IntType extends ColumnType
+
+  case object TextType extends ColumnType
+
+  case object TimestampType extends ColumnType
+
+  case object UuidType extends ColumnType
+
+  case object VarcharType extends ColumnType
+
+  case object VarintType extends ColumnType
+
+  case object TimeuuidType extends ColumnType
+
+  case object InetType extends ColumnType
+
+  case class ListType(c: ColumnType) extends ColumnType
+
+  case class MapType(keyType: ColumnType, valueType: ColumnType) extends ColumnType
+
+  case class SetType(c: ColumnType) extends ColumnType
 
 
 }

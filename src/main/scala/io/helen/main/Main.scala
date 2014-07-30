@@ -48,7 +48,7 @@ object Main {
 //    selectWithValues(client)
 //    selectWithPrepare(client)
 
-    batchInsert(client)
+//    batchInsert(client)
 
     selectAll(client)
 
@@ -109,7 +109,7 @@ object Main {
     )
     println(
       Await.result(
-        client.send(Requests.Batch(LoggedBatch, queries)),
+        client.send(Requests.Batch(queries)),
         timeout)
     )
   }
