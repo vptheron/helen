@@ -68,3 +68,12 @@ val boundValues = List(
 
 client.send(Requests.Execute(prepared.id, QueryParameters(values = boundValues)))
 ```
+
+## Upcoming features:
+
+* Introduce the concept of `Connection` which will wrap several actual connections to several nodes
+* Automatic reconnect and failover
+* Cluster discovery
+* Higher level API to issue requests and receive responses
+* Retry/load balancing policies
+* Cluster event notifications
