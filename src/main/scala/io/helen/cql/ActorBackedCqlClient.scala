@@ -34,8 +34,9 @@ class ActorBackedCqlClient(host: String, port: Int)
   private val actor = system.actorOf(ConnectionActor.props(host, port))
   Await.ready(actor ? Initialize, timeout.duration)
 
-  override def send(request: Request): Future[Response] =
-    (actor ? request).mapTo[Response]
+  override def send(request: Request): Future[Response] = (actor ? request).mapTo[Response]
 
-  override def close(): Unit = actor ? Close
+  override def close(){
+    Await.ready(actor ? Close, timeout.duration)
+  }
 }

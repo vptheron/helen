@@ -20,7 +20,7 @@ import java.util.UUID
 
 import akka.util.{ByteIterator, ByteString, ByteStringBuilder}
 
-object Body {
+private[cql] object Body {
 
   implicit val byteOrder = java.nio.ByteOrder.BIG_ENDIAN
 
