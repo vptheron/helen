@@ -42,7 +42,7 @@ The `Requests` object contains all the available request frames supported by the
 actor ! Requests.Startup
 actor ! Requests.Query("CREATE KEYSPACE demodb WITH REPLICATION = {'class' : 'SimpleStrategy','replication_factor': 1}")
 client.send(Requests.Query("CREATE TABLE demodb.songs (id uuid PRIMARY KEY, title text, album text, artist text, tags set<text>, data blob)"))
-client.send(Requests.Query("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES "756716f7-2e54-4715-9f00-91dcbea6cf50, 'La Petite Tonkinoise', 'Bye Bye Blackbird', 'Joséphine Baker', {'jazz', '2013'}"))
+client.send(Requests.Query("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (756716f7-2e54-4715-9f00-91dcbea6cf50, 'La Petite Tonkinoise', 'Bye Bye Blackbird', 'Joséphine Baker', {'jazz', '2013'})"))
 ```
 
 Other types of request are available like `Prepare`, `Execute`, `Batch`, etc.
