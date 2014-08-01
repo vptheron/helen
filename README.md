@@ -49,6 +49,8 @@ Other types of request are available like `Prepare`, `Execute`, `Batch`, etc.
 
 **Global Keyspace**: Since one actor is a wrapper for one connection, you can safely issue a `USE KEYSPACE` request to set a current keyspace for that connection.
 
+Multiple requests can be submitted on the same connection at the same time. It is perfectly realistic to create only a few actors/clients and use them to send a lot of requests in parallel. One connection to Cassandra can handle a maximum of 128 concurrent requests (i.e. you can have a maximum of 128 pending requests waiting for a response). This is actually a limitation unforced by the CQL protocol.
+
 ### Parameterized statements
 
 Starting with Cassandra 2.0, both normal and prepared statements support ? markers. The `Values` object contains helper functions to serialize/deserialize scala types to/from CQL representation.
