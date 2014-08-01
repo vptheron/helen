@@ -21,7 +21,7 @@ val system = ActorSystem("helen-system")
 Then, you can either deal with the `ConnectionActor` directly:
 
 ```scala
-val actor: ActorRef = system.actorOf(ConnectionActor.props(host, port))
+val actor: ActorRef = system.actorOf(ConnectionActor.props("localhost", 9042))
 ```
 
 or instantiate an `ActorBackedCqlClient` (which will internally instantiate a `ConnectionActor`):
@@ -32,7 +32,7 @@ val client: CqlClient = new ActorBackedCqlClient("localhost", 9042)(system)
 
 The `CqlClient` provides you with some type safety since it's `send` method only accepts `Request` instances and returns `Future[Responses]`.
 
-*Important*: one `ConnectionActor` == one connection to one node, there is no support for reconnection or load balancing between nodes of the same cluster.
+**One actor = one connection**: one `ConnectionActor` = one connection to one node, there is no support for reconnection or load balancing between nodes of the same cluster.
 
 ### Sending requests
 
@@ -42,12 +42,12 @@ The `Requests` object contains all the available request frames supported by the
 actor ! Requests.Startup
 actor ! Requests.Query("CREATE KEYSPACE demodb WITH REPLICATION = {'class' : 'SimpleStrategy','replication_factor': 1}")
 client.send(Requests.Query("CREATE TABLE demodb.songs (id uuid PRIMARY KEY, title text, album text, artist text, tags set<text>, data blob)"))
-client.send(Requests.Query("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES "756716f7-2e54-4715-9f00-91dcbea6cf50, 'La Petite Tonkinoise', 'Bye Bye Blackbird','Joséphine Baker',{'jazz', '2013'}"))
+client.send(Requests.Query("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES "756716f7-2e54-4715-9f00-91dcbea6cf50, 'La Petite Tonkinoise', 'Bye Bye Blackbird', 'Joséphine Baker', {'jazz', '2013'}"))
 ```
 
 Other types of request are available like `Prepare`, `Execute`, `Batch`, etc.
 
-*USE KEYSPACE*: Since one actor is a wrapper for one connection, you can safely issue a `USE KEYSPACE` request to set a current keyspace for that connection.
+**Global Keyspace**: Since one actor is a wrapper for one connection, you can safely issue a `USE KEYSPACE` request to set a current keyspace for that connection.
 
 ### Parameterized statements
 
