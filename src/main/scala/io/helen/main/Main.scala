@@ -48,7 +48,6 @@ object Main {
 
     selectWithValues(client)
     selectWithPrepare(client)
-
     batchInsert(client)
 
     selectAll(client)
