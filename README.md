@@ -18,38 +18,26 @@ First, you will need an `ActorSystem` in scope:
 val system = ActorSystem("helen-system")
 ```
 
-Then, you can either deal with the `ConnectionActor` directly:
+Then you can instantiate an `ActorBackedCqlClient`:
 
 ```scala
-val actor: ActorRef = system.actorOf(ConnectionActor.props("localhost", 9042))
+val client: CqlClient = new ActorBackedCqlClient("localhost", 9042, 3)(system)
 ```
 
-or instantiate an `ActorBackedCqlClient` (which will internally instantiate a `ConnectionActor`):
-
-```scala
-val client: CqlClient = new ActorBackedCqlClient("localhost", 9042)(system)
-```
-
-The `CqlClient` provides you with some type safety since it's `send` method only accepts `Request` instances and returns `Future[Responses]`.
-
-**One actor = one connection**: one `ConnectionActor` = one connection to one node, there is no support for reconnection or load balancing between nodes of the same cluster.
+The `CqlClient` above will open 3 connections to `localhost:9042`. The first message to start a CQL session (`Startup`) is automatically sent.
 
 ### Sending requests
 
-The `Requests` object contains all the available request frames supported by the CQL protocol. `Requests.Startup` should be the very first request you sent.
+The `Requests` object contains all the available request frames supported by the CQL protocol. You do not need to send `Requests.Startup`.
 
 ```scala
-actor ! Requests.Startup
-actor ! Requests.Query("CREATE KEYSPACE demodb WITH REPLICATION = {'class' : 'SimpleStrategy','replication_factor': 1}")
 client.send(Requests.Query("CREATE TABLE demodb.songs (id uuid PRIMARY KEY, title text, album text, artist text, tags set<text>, data blob)"))
 client.send(Requests.Query("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (756716f7-2e54-4715-9f00-91dcbea6cf50, 'La Petite Tonkinoise', 'Bye Bye Blackbird', 'Joséphine Baker', {'jazz', '2013'})"))
 ```
 
 Other types of request are available like `Prepare`, `Execute`, `Batch`, etc.
 
-**Global Keyspace**: Since one actor is a wrapper for one connection, you can safely issue a `USE KEYSPACE` request to set a current keyspace for that connection.
-
-Multiple requests can be submitted on the same connection at the same time. It is perfectly realistic to create only a few actors/clients and use them to send a lot of requests in parallel. One connection to Cassandra can handle a maximum of 128 concurrent requests (i.e. you can have a maximum of 128 pending requests waiting for a response). This is actually a limitation unforced by the CQL protocol.
+**Global Keyspace**: the `CqlClient` internally maintains several connections to the Cassandra node, you should *not* issue a `use keyspace` query since it will only be sent over one of the connections.
 
 ### Parameterized statements
 
@@ -68,12 +56,3 @@ val boundValues = List(
 
 client.send(Requests.Execute(prepared.id, QueryParameters(values = boundValues)))
 ```
-
-## Upcoming features:
-
-* Introduce the concept of `Connection` which will wrap several actual connections to several nodes
-* Automatic reconnect and failover
-* Cluster discovery
-* Higher level API to issue requests and receive responses
-* Retry/load balancing policies
-* Cluster event notifications

@@ -36,24 +36,23 @@ object Main {
 
     val system = ActorSystem("helen-system")
 
-    val client = new ActorBackedCqlClient("localhost", 9042)(system)
+    val client = new ActorBackedCqlClient("localhost", 9042, 3)(system)
 
-    sendAndPrint(client, Requests.Startup)
+//    sendAndPrint(client, Requests.Startup)
 
     setupKeyspaceTable(client)
 
     useOptions(client)
 
+    insertSimple(client)
     insertWithPrepareExecute(client)
-
-    selectWithValues(client)
-    selectWithPrepare(client)
+    insertWithValues(client)
     batchInsert(client)
 
-    selectAll(client)
-
-    crazyInsert(client)
-    crazySelect(client)
+    selectSimple(client)
+    selectWithPrepareExecute(client)
+    selectWithValues(client)
+    selectWithValues2(client)
 
     client.close()
     system.shutdown()
@@ -93,6 +92,12 @@ object Main {
     )
   }
 
+  private def insertSimple(client: CqlClient) {
+    val query = Requests.Query("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES " +
+      "(444446f7-2e54-4715-9f00-91dcbea6cf50, 'super title', 'super album', 'super artist', {'hello', 'world'})")
+    sendAndPrint(client, query)
+  }
+
   private def insertWithPrepareExecute(client: CqlClient) {
 
     val prepared = sendAndPrint(client,
@@ -112,36 +117,7 @@ object Main {
     )
   }
 
-  private def selectWithValues(client: CqlClient) {
-    val boundValues = List(Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")))
-
-    sendAndPrint(client,
-      Requests.Query("SELECT * FROM demodb.songs WHERE id = ?", QueryParameters(values = boundValues))
-    )
-  }
-
-  private def batchInsert(client: CqlClient) {
-    val queries = List(
-      UnpreparedBatchQuery("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (999716f7-2e54-4715-9f00-91dcbea6cf50, 'hello', 'world', 'author', {'rock', '2014'})", Nil),
-      UnpreparedBatchQuery("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (888716f7-2e54-4715-9f00-91dcbea6cf50, 'hello1', 'world1', 'author1', {'rock', '2014'})", Nil)
-    )
-    sendAndPrint(client, Requests.Batch(queries))
-  }
-
-  private def selectAll(client: CqlClient) {
-    sendAndPrint(client, Requests.Query("SELECT * FROM demodb.songs"))
-  }
-
-  private def selectWithPrepare(client: CqlClient) {
-    val prepared = sendAndPrint(client, Requests.Prepare("SELECT * FROM demodb.songs WHERE id = ?")
-    ).asInstanceOf[Prepared]
-
-    val boundValues = List(Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")))
-
-    sendAndPrint(client, Requests.Execute(prepared.id, QueryParameters(values = boundValues)))
-  }
-
-  private def crazyInsert(client: CqlClient) {
+  private def insertWithValues(client: CqlClient) {
     val vals = List(
       Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")),
       Values.textToBytes("myTitle"),
@@ -163,7 +139,36 @@ object Main {
     )
   }
 
-  private def crazySelect(client: CqlClient) {
+  private def batchInsert(client: CqlClient) {
+    val queries = List(
+      UnpreparedBatchQuery("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (999716f7-2e54-4715-9f00-91dcbea6cf50, 'hello', 'world', 'author', {'rock', '2014'})", Nil),
+      UnpreparedBatchQuery("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (888716f7-2e54-4715-9f00-91dcbea6cf50, 'hello1', 'world1', 'author1', {'rock', '2014'})", Nil)
+    )
+    sendAndPrint(client, Requests.Batch(queries))
+  }
+
+  private def selectSimple(client: CqlClient) {
+    sendAndPrint(client, Requests.Query("SELECT * FROM demodb.songs"))
+  }
+
+  private def selectWithPrepareExecute(client: CqlClient) {
+    val prepared = sendAndPrint(client, Requests.Prepare("SELECT * FROM demodb.songs WHERE id = ?")
+    ).asInstanceOf[Prepared]
+
+    val boundValues = List(Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")))
+
+    sendAndPrint(client, Requests.Execute(prepared.id, QueryParameters(values = boundValues)))
+  }
+
+  private def selectWithValues(client: CqlClient) {
+    val boundValues = List(Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")))
+
+    sendAndPrint(client,
+      Requests.Query("SELECT * FROM demodb.songs WHERE id = ?", QueryParameters(values = boundValues))
+    )
+  }
+
+  private def selectWithValues2(client: CqlClient) {
     val rows = sendAndPrint(client, Requests.Query("SELECT * FROM demodb.songs2")).asInstanceOf[Rows]
 
     val firstRow = rows.content(0)

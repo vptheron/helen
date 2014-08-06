@@ -18,25 +18,22 @@ package io.helen.cql
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystem
-import akka.pattern.ask
+import akka.pattern.{ask, gracefulStop}
 import akka.util.Timeout
 import io.helen.cql.Requests.Request
 import io.helen.cql.Responses.Response
 
 import scala.concurrent.{Await, Future}
 
-class ActorBackedCqlClient(host: String, port: Int)
+class ActorBackedCqlClient(host: String, port: Int, connections: Int)
                           (implicit system: ActorSystem) extends CqlClient {
 
-  import ConnectionActor._
-
   private implicit val timeout = Timeout(10, TimeUnit.SECONDS)
-  private val actor = system.actorOf(ConnectionActor.props(host, port))
-  Await.ready(actor ? Initialize, timeout.duration)
+  private val actor = system.actorOf(NodeConnectionActor.props(host, port, connections), "node-connection")
 
   override def send(request: Request): Future[Response] = (actor ? request).mapTo[Response]
 
   override def close(){
-    Await.ready(actor ? Terminate, timeout.duration)
+    Await.result(gracefulStop(actor, timeout.duration, NodeConnectionActor.Close), timeout.duration)
   }
 }

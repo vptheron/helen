@@ -17,40 +17,31 @@ package io.helen.cql
 
 import java.net.InetSocketAddress
 
-import akka.actor.{Actor, ActorRef, Props, Status}
+import akka.actor._
 import akka.io.{IO, Tcp}
+import akka.io.Tcp._
 import io.helen.cql.Requests.Request
 
-private[cql] class ConnectionActor(host: String, port: Int) extends Actor {
+private[cql] class SingleConnectionActor(address: InetSocketAddress) extends Actor with Stash {
 
-  import akka.io.Tcp._
-  import io.helen.cql.ConnectionActor._
+  import io.helen.cql.SingleConnectionActor._
 
   implicit val sys = context.system
 
-  def receive = {
-    case Initialize =>
-      IO(Tcp) ! Connect(new InetSocketAddress(host, port))
-      context.become(waitForConnection(sender()))
+  IO(Tcp) ! Connect(address)
 
-    case other =>
-      sender ! Status.Failure(
-        new Exception("ConnectionActor not connected. `Initialize` should be the first message sent to this actor."))
-  }
-
-  private def waitForConnection(initializer: ActorRef): Receive = {
+  override def receive = {
     case Connected(_, _) =>
       val connection = sender()
       connection ! Register(self)
-      initializer ! Status.Success(Unit)
+      unstashAll()
       context.become(ready(connection, allStreams, Map.empty))
 
     case CommandFailed(_: Connect) =>
-      initializer ! Status.Failure(new Exception("Failed to connect to " + host))
+      //TODO report failure to supervisor
       context stop self
 
-    case other =>
-      sender ! Status.Failure(new Exception("Waiting for connection."))
+    case other => stash()
   }
 
   private def ready(connection: ActorRef, availableStreams: Set[Byte], processing: Map[Byte, ActorRef]): Receive = {
@@ -100,11 +91,11 @@ private[cql] class ConnectionActor(host: String, port: Int) extends Actor {
 
 }
 
-private[cql] object ConnectionActor {
+private[cql] object SingleConnectionActor {
 
-  def props(host: String, port: Int): Props = Props(new ConnectionActor(host, port))
+  def props(host: String, port: Int): Props = props(new InetSocketAddress(host, port))
 
-  case object Initialize
+  def props(address: InetSocketAddress): Props = Props(new SingleConnectionActor(address))
 
   case object Terminate
 
