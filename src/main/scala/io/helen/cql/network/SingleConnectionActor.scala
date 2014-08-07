@@ -13,18 +13,19 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package io.helen.cql
+package io.helen.cql.network
 
 import java.net.InetSocketAddress
 
 import akka.actor._
-import akka.io.{IO, Tcp}
 import akka.io.Tcp._
+import akka.io.{IO, Tcp}
+import io.helen.cql.Frames
 import io.helen.cql.Requests.Request
 
 private[cql] class SingleConnectionActor(address: InetSocketAddress) extends Actor with Stash {
 
-  import io.helen.cql.SingleConnectionActor._
+  import SingleConnectionActor._
 
   implicit val sys = context.system
 

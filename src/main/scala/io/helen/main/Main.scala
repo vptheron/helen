@@ -20,9 +20,12 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.util.ByteString
+import io.helen.cql.Codecs.Implicits._
+import io.helen.cql.Codecs._
+import io.helen.cql.Requests
 import io.helen.cql.Requests.{QueryParameters, Request, UnpreparedBatchQuery}
 import io.helen.cql.Responses.{Prepared, Response, Rows}
-import io.helen.cql.{ActorBackedCqlClient, CqlClient, Requests, Values}
+import io.helen.cql.network.{ActorBackedCqlClient, CqlClient}
 import org.joda.time.DateTime
 
 import scala.concurrent.Await
@@ -105,11 +108,11 @@ object Main {
     ).asInstanceOf[Prepared]
 
     val boundValues = List(
-      Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")),
-      Values.textToBytes("La Petite Tonkinoise"),
-      Values.textToBytes("Bye Bye Blackbird"),
-      Values.textToBytes("Josephine Baker"),
-      Values.setToBytes(Set("jazz", "2014"), Values.textToBytes)
+      UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50").asUUID,
+      "La Petite Tonkinoise".asText,
+      "Bye Bye Blackbird".asText,
+      "Josephine Baker".asText,
+      asSet(Set("jazz", "2014"), asText)
     )
 
     sendAndPrint(client,
@@ -119,17 +122,17 @@ object Main {
 
   private def insertWithValues(client: CqlClient) {
     val vals = List(
-      Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")),
-      Values.textToBytes("myTitle"),
-      Values.varcharToBytes("Bye Bye Blackbird"),
-      Values.asciiToBytes("Josephine Baker"),
-      Values.booleanToBytes(true),
-      Values.intToBytes(42),
-      Values.dateTimeToBytes(DateTime.now),
-      Values.inetToBytes(InetAddress.getByName("192.168.1.1")),
-      Values.listToBytes(List(1, 2), Values.intToBytes),
-      Values.mapToBytes(Map("true" -> true, "false" -> false), Values.textToBytes, Values.booleanToBytes),
-      Values.setToBytes(Set("jazz", "2013"), Values.textToBytes),
+      UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50").asUUID,
+      "myTitle".asText,
+      "Bye Bye Blackbird".asVarchar,
+      "Josephine Baker".asAscii,
+      true.asBoolean,
+      42.asInt,
+      DateTime.now.asTimestamp,
+      InetAddress.getByName("192.168.1.1").asInet,
+      asList(List(1, 2), asInt),
+      asMap(Map("true" -> true, "false" -> false), asText, asBoolean),
+      asSet(Set("jazz", "2013"), asText),
       ByteString.fromString("some random text to save")
     )
 
@@ -155,13 +158,13 @@ object Main {
     val prepared = sendAndPrint(client, Requests.Prepare("SELECT * FROM demodb.songs WHERE id = ?")
     ).asInstanceOf[Prepared]
 
-    val boundValues = List(Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")))
+    val boundValues = List(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50").asUUID)
 
     sendAndPrint(client, Requests.Execute(prepared.id, QueryParameters(values = boundValues)))
   }
 
   private def selectWithValues(client: CqlClient) {
-    val boundValues = List(Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")))
+    val boundValues = List(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50").asUUID)
 
     sendAndPrint(client,
       Requests.Query("SELECT * FROM demodb.songs WHERE id = ?", QueryParameters(values = boundValues))
@@ -172,18 +175,18 @@ object Main {
     val rows = sendAndPrint(client, Requests.Query("SELECT * FROM demodb.songs2")).asInstanceOf[Rows]
 
     val firstRow = rows.content(0)
-    val id = Values.bytesToUUID(firstRow(0).get)
-    val address = Values.bytesToInet(firstRow(1).get)
-    val album = Values.bytesToText(firstRow(2).get)
-    val artist = Values.bytesToAscii(firstRow(3).get)
+    val id = firstRow(0).get.fromUUID
+    val address = firstRow(1).get.fromInet
+    val album = firstRow(2).get.fromText
+    val artist = firstRow(3).get.fromAscii
     val data = firstRow(4).get.utf8String
-    val good = Values.bytesToBoolean(firstRow(5).get)
-    val justMap = Values.bytesToMap(firstRow(6).get, Values.bytesToText, Values.bytesToBoolean)
-    val members = Values.bytesToList(firstRow(7).get, Values.bytesToInt)
-    val published = Values.bytesToDateTime(firstRow(8).get)
-    val rating = Values.bytesToInt(firstRow(9).get)
-    val tags = Values.bytesToSet(firstRow(10).get, Values.bytesToText)
-    val title = Values.bytesToText(firstRow(11).get)
+    val good = firstRow(5).get.fromBoolean
+    val justMap = fromMap(firstRow(6).get, fromText, fromBoolean)
+    val members = fromList(firstRow(7).get, fromInt)
+    val published = firstRow(8).get.fromTimestamp
+    val rating = firstRow(9).get.fromInt
+    val tags = fromSet(firstRow(10).get, fromText)
+    val title = firstRow(11).get.fromText
 
     println(s"$id $address $album $artist $data $good $justMap $members $published $rating $tags $title")
   }

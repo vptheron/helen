@@ -1,12 +1,13 @@
-package io.helen.cql
+package io.helen.cql.network
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import akka.routing.{ActorRefRoutee, RoundRobinRoutingLogic, Router}
 import akka.pattern.ask
+import akka.routing.{ActorRefRoutee, RoundRobinRoutingLogic, Router}
 import akka.util.Timeout
+import io.helen.cql.Requests
 import io.helen.cql.Requests.Request
 
 import scala.concurrent.Await

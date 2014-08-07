@@ -13,7 +13,7 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package io.helen.cql
+package io.helen.cql.network
 
 import java.util.concurrent.TimeUnit
 
