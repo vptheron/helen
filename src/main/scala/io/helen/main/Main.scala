@@ -76,6 +76,7 @@ object Main {
 
   private def setupKeyspaceTable(client: CqlClient) {
     sendAndPrint(client,
+      Requests.Query("DROP KEYSPACE demodb"),
       Requests.Query("CREATE KEYSPACE demodb WITH REPLICATION = {'class' : 'SimpleStrategy','replication_factor': 1}"),
       Requests.Query("CREATE TABLE demodb.songs (id uuid PRIMARY KEY, title text, album text, artist text, tags set<text>, data blob)"),
       Requests.Query(
@@ -91,7 +92,8 @@ object Main {
           |members list<int>,
           |justMap map<text, boolean>,
           |tags set<text>,
-          |data blob)""".stripMargin)
+          |data blob)""".stripMargin),
+    Requests.Query("DESCRIBE KEYSPACES")
     )
   }
 
