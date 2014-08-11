@@ -46,14 +46,16 @@ private[cql] class SingleConnectionActor(address: InetSocketAddress) extends Act
   }
 
   private def ready(connection: ActorRef, availableStreams: Set[Byte], processing: Map[Byte, ActorRef]): Receive = {
-    case req: Request =>
-      if (availableStreams.isEmpty) {
+    case req: Request => availableStreams.headOption match {
+      case None =>
+        //TODO could use stash to  store the request and try later
         sender ! Status.Failure(new Exception("Connection reached max pending requests."))
-      } else {
+
+      case Some(stream) =>
         val stream = availableStreams.head
         connection ! Write(Frames.fromRequest(stream, req))
         context.become(ready(connection, availableStreams.tail, processing + (stream -> sender)))
-      }
+    }
 
     case CommandFailed(Write(data, _)) =>
       val (stream, request) = Frames.fromBytes(data)
@@ -82,9 +84,7 @@ private[cql] class SingleConnectionActor(address: InetSocketAddress) extends Act
   }
 
   private def closing(client: ActorRef): Receive = {
-    case _: ConnectionClosed =>
-      client ! Status.Success(Unit)
-      context stop self
+    case _: ConnectionClosed => context stop self
 
     case other =>
       sender ! Status.Failure(new Exception("This connection is closing and not accepting new requests."))

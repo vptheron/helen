@@ -92,8 +92,7 @@ object Main {
           |members list<int>,
           |justMap map<text, boolean>,
           |tags set<text>,
-          |data blob)""".stripMargin),
-    Requests.Query("DESCRIBE KEYSPACES")
+          |data blob)""".stripMargin)
     )
   }
 

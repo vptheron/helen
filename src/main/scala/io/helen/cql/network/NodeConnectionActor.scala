@@ -38,10 +38,12 @@ private[cql] class NodeConnectionActor(node: InetSocketAddress, connectionCount:
     case r: Request => router.route(r, sender())
 
     case Terminated(routee) =>
+      println("A routee just terminated, starting a new instance.")
       router = router.removeRoutee(routee)
       router = router.addRoutee(newWatchedActor)
 
     case NodeConnectionActor.Close =>
+      println("Received Close request, terminating all routees.")
       router.routees.foreach(_.send(SingleConnectionActor.Terminate, self))
       context.become(closing())
   }
