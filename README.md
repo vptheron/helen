@@ -41,17 +41,19 @@ Other types of request are available like `Prepare`, `Execute`, `Batch`, etc.
 
 ### Parameterized statements
 
-Starting with Cassandra 2.0, both normal and prepared statements support ? markers. The `Values` object contains helper functions to serialize/deserialize scala types to/from CQL representation.
+Starting with Cassandra 2.0, both normal and prepared statements support ? markers. The `Codecs` object contains helper functions as well as implicit imports to serialize/deserialize scala types to/from CQL representation.
 
 ```scala
-val prepared = client.send(Requests.Prepare("INSERT INTO demodb.songs (id, title, album, artist, tags) VALUES (?, ?, ?, ?, ?)")).asInstanceOf[Prepared]
+import io.helen.cql.Codecs.Implicits._
+
+val prepared = client.send(Requests.Prepare("INSERT INTO demodb.songs (id, title, album, artist, datetime) VALUES (?, ?, ?, ?, ?)")).asInstanceOf[Prepared]
 
 val boundValues = List(
-  Values.uuidToBytes(UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50")),
-  Values.textToBytes("La Petite Tonkinoise"),
-  Values.textToBytes("Bye Bye Blackbird"),
-  Values.textToBytes("Josephine Baker"),
-  Values.setToBytes(Set("jazz", "2014"), Values.textToBytes)
+  UUID.fromString("756716f7-2e54-4715-9f00-91dcbea6cf50").asUUID,
+  "La Petite Tonkinoise".asText,
+  "Bye Bye Blackbird".asAscii,
+  "Josephine Baker".asVarchar,
+  DateTime.now.asTimestamp
 )
 
 client.send(Requests.Execute(prepared.id, QueryParameters(values = boundValues)))
