@@ -16,12 +16,12 @@ name := "Helen"
 
 version := "0.1.0-SNAPSHOT"
 
-scalaVersion := "2.11.1"
+scalaVersion := "2.11.2"
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % "2.3.4",
+  "com.typesafe.akka" %% "akka-actor" % "2.3.5",
   "joda-time" % "joda-time" % "2.4",
   "org.joda" % "joda-convert" % "1.5",
   "com.datastax.cassandra" % "cassandra-driver-core" % "2.0.4"
