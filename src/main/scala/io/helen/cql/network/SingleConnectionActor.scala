@@ -45,7 +45,7 @@ private[cql] class SingleConnectionActor(address: InetSocketAddress) extends Act
     case other => stash()
   }
 
-  private def ready(connection: ActorRef, availableStreams: Set[Byte], processing: Map[Byte, ActorRef]): Receive = {
+  private def ready(connection: ActorRef, availableStreams: Set[Short], processing: Map[Short, ActorRef]): Receive = {
     case req: Request => availableStreams.headOption match {
       case None =>
         //TODO could use stash to  store the request and try later
@@ -100,5 +100,5 @@ private[cql] object SingleConnectionActor {
 
   case object Terminate
 
-  private val allStreams: Set[Byte] = (0 until 128).map(_.toByte).toSet
+  private val allStreams: Set[Short] = (0 until 32768).map(_.toShort).toSet
 }

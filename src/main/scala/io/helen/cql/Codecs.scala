@@ -66,28 +66,28 @@ object Codecs {
 
   def asList[A](l: List[A], eltCodec: A => ByteString): ByteString = {
     val builder = new ByteStringBuilder()
-      .putShort(l.size)
+      .putInt(l.size)
 
-    l.foreach(eltCodec andThen Body.shortBytes andThen builder.append)
+    l.foreach(eltCodec andThen Body.bytes andThen builder.append)
     builder.result()
   }
 
   def asSet[A](s: Set[A], eltCodec: A => ByteString): ByteString = {
     val builder = new ByteStringBuilder()
-      .putShort(s.size)
+      .putInt(s.size)
 
-    s.foreach(eltCodec andThen Body.shortBytes andThen builder.append)
+    s.foreach(eltCodec andThen Body.bytes andThen builder.append)
     builder.result()
   }
 
   def asMap[K, V](m: Map[K, V], keyCodec: K => ByteString, valueCodec: V => ByteString): ByteString = {
     val builder = new ByteStringBuilder()
-      .putShort(m.size)
+      .putInt(m.size)
 
     m foreach {
       case (key, value) => builder
-        .append(Body.shortBytes(keyCodec(key)))
-        .append(Body.shortBytes(valueCodec(value)))
+        .append(Body.bytes(keyCodec(key)))
+        .append(Body.bytes(valueCodec(value)))
     }
     builder.result()
   }
@@ -138,25 +138,25 @@ object Codecs {
 
   def fromList[A](b: ByteString, eltCodec: ByteString => A): List[A] = {
     val it = b.iterator
-    val size = it.getShort
+    val size = it.getInt
 
-    (0 until size).map(_ => eltCodec(Body.readShortBytes(it)))
+    (0 until size).map(_ => eltCodec(Body.readBytes(it).get))
       .toList
   }
 
   def fromSet[A](b: ByteString, eltCodec: ByteString => A): Set[A] = {
     val it = b.iterator
-    val size = it.getShort
+    val size = it.getInt
 
-    (0 until size).map(_ => eltCodec(Body.readShortBytes(it)))
+    (0 until size).map(_ => eltCodec(Body.readBytes(it).get))
       .toSet
   }
 
   def fromMap[K, V](b: ByteString, keyCodec: ByteString => K, valueCode: ByteString => V): Map[K, V] = {
     val it = b.iterator
-    val size = it.getShort
+    val size = it.getInt
 
-    (0 until size).map(_ => keyCodec(Body.readShortBytes(it)) -> valueCode(Body.readShortBytes(it)))
+    (0 until size).map(_ => keyCodec(Body.readBytes(it).get) -> valueCode(Body.readBytes(it).get))
       .toMap
   }
 

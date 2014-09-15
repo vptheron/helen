@@ -4,7 +4,7 @@
 
 A fully asynchronous driver for [Apache Cassandra](http://cassandra.apache.org/) written in Scala and built on top of [Akka IO](http://akka.io/).
 
-This driver is built and tested with Cassandra 2.0.9 and uses version 2 of CQL3.
+This driver is built and tested with Cassandra 2.1.0 and uses version 3 of the CQL binary protocol.
 
 ## Low level API
 

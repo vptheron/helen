@@ -23,7 +23,7 @@ private[cql] object Frames {
 
   import Body._
 
-  def fromRequest(stream: Byte, req: Request): ByteString = {
+  def fromRequest(stream: Short, req: Request): ByteString = {
     val (opsCode, body) =
       req match {
         case Startup => (0x01, Body.stringMap(Map("CQL_VERSION" -> "3.0.0")))
@@ -36,8 +36,8 @@ private[cql] object Frames {
         case Register(topology, status, schema) => (0x0B, serializeRegister(topology, status, schema))
       }
 
-    new ByteStringBuilder().putByte(0x02).putByte(0x00)
-      .putByte(stream).putByte(opsCode.toByte).putInt(body.length).append(body)
+    new ByteStringBuilder().putByte(0x03).putByte(0x00)
+      .putShort(stream).putByte(opsCode.toByte).putInt(body.length).append(body)
       .result()
   }
 
@@ -106,6 +106,7 @@ private[cql] object Frames {
     body.putShort(queries.size)
     queries.foreach(q => body.append(serializeBatchQuery(q)))
     body.putShort(serializeConsistency(consistency))
+    body.putByte(0x00)
     body.result()
   }
 
@@ -133,10 +134,10 @@ private[cql] object Frames {
   }
 
 
-  def fromBytes(data: ByteString): (Byte, Response) = {
+  def fromBytes(data: ByteString): (Short, Response) = {
     val dataIt = data.iterator
     val (version, flags, stream, opsCode, length) =
-      (dataIt.getByte, dataIt.getByte, dataIt.getByte, dataIt.getByte, dataIt.getInt)
+      (dataIt.getByte, dataIt.getByte, dataIt.getShort, dataIt.getByte, dataIt.getInt)
 
     val response = opsCode match {
       case 0x00 => Error(dataIt.getInt, readString(dataIt))
@@ -220,7 +221,6 @@ private[cql] object Frames {
       case 0x0007 => DoubleType
       case 0x0008 => FloatType
       case 0x0009 => IntType
-      case 0x000A => TextType
       case 0x000B => TimestampType
       case 0x000C => UuidType
       case 0x000D => VarcharType
@@ -245,7 +245,12 @@ private[cql] object Frames {
       case "UPDATED" => Updated
       case "DROPPED" => Dropped
     }
-    SchemaChange(change, readString(dataIterator), readString(dataIterator))
+    val (target, keyspace, affectedObject) = readString(dataIterator) match {
+      case "KEYSPACE" => (Keyspace, readString(dataIterator), None)
+      case "TABLE" => (Table, readString(dataIterator), Some(readString(dataIterator)))
+      case "TYPE" => (Type, readString(dataIterator), Some(readString(dataIterator)))
+    }
+    SchemaChange(change, target, keyspace, affectedObject)
   }
 
 }

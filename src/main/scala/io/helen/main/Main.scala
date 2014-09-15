@@ -41,22 +41,32 @@ object Main {
 
     val client = new ActorBackedCqlClient("localhost", 9042, 3)(system)
 
-//    sendAndPrint(client, Requests.Startup)
-
+    //    sendAndPrint(client, Requests.Startup)
+    println("1 ***********")
     setupKeyspaceTable(client)
 
+    println("2 ***********")
     useOptions(client)
 
+    println("3 ***********")
     insertSimple(client)
+    println("4 ***********")
     insertWithPrepareExecute(client)
+    println("5 ***********")
     insertWithValues(client)
+    println("6 ***********")
     batchInsert(client)
 
+    println("7 ***********")
     selectSimple(client)
+    println("8 ***********")
     selectWithPrepareExecute(client)
+    println("9 ***********")
     selectWithValues(client)
+    println("10 ***********")
     selectWithValues2(client)
 
+    println("11 ***********")
     client.close()
     system.shutdown()
   }
@@ -189,7 +199,7 @@ object Main {
     val tags = fromSet(firstRow(10).get, fromText)
     val title = firstRow(11).get.fromText
 
-    println(s"$id $address $album $artist $data $good $justMap $members $published $rating $tags $title")
+    println(s"RESULT : $id $address $album $artist $data $good $justMap $members $published $rating $tags $title")
   }
 
 }

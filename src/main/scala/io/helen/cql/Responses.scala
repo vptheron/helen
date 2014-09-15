@@ -53,8 +53,9 @@ object Responses {
                           node: InetSocketAddress) extends Event
 
   case class SchemaChange(change: Change,
+                          target: Target,
                           keyspace: String,
-                          table: String) extends Event with Result
+                          affectedObject: Option[String]) extends Event with Result
 
   case class AuthChallenge(token: Option[ByteString]) extends Response
 
@@ -78,6 +79,14 @@ object Responses {
 
   case object Dropped extends Change
 
+  sealed trait Target
+
+  case object Keyspace extends Target
+
+  case object Table extends Target
+
+  case object Type extends Target
+
   sealed trait ColumnType
 
   case class CustomType(value: String) extends ColumnType
@@ -100,7 +109,7 @@ object Responses {
 
   case object IntType extends ColumnType
 
-  case object TextType extends ColumnType
+  //  case object TextType extends ColumnType
 
   case object TimestampType extends ColumnType
 
@@ -120,6 +129,11 @@ object Responses {
 
   case class SetType(c: ColumnType) extends ColumnType
 
+  case class UdtType(keyspace: String,
+                     name: String,
+                     fields: Seq[(String, ColumnType)]) extends ColumnType
+
+  case class TupleType(types: Seq[ColumnType]) extends ColumnType
 
 }
 
