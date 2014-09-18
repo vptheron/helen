@@ -32,7 +32,7 @@ private[cql] object Frames {
         case Query(q, params) => (0x07, serializeQuery(q, params))
         case Prepare(query) => (0x09, Body.longString(query))
         case Execute(id, params) => (0x0A, serializeExecute(id, params))
-        case Batch(queries, batchType, consistency) => (0x0D, serializeBatch(batchType, queries, consistency))
+        case Batch(queries, batchType, consistency, _, _) => (0x0D, serializeBatch(batchType, queries, consistency))
         case Register(topology, status, schema) => (0x0B, serializeRegister(topology, status, schema))
       }
 

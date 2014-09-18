@@ -23,6 +23,7 @@ object Responses {
 
   sealed trait Response
 
+  // TODO should be a sealed trait with concrete classes for each case, see section 9
   case class Error(errorCode: Int,
                    errorMessage: String) extends Response
 

@@ -67,6 +67,9 @@ object Main {
     selectWithValues2(client)
 
     println("11 ***********")
+    insertSelectTuple(client)
+    println("12 ***********")
+
     client.close()
     system.shutdown()
   }
@@ -102,7 +105,8 @@ object Main {
           |members list<int>,
           |justMap map<text, boolean>,
           |tags set<text>,
-          |data blob)""".stripMargin)
+          |data blob)""".stripMargin),
+      Requests.Query("CREATE TABLE demodb.tuple_test (the_key int PRIMARY KEY, the_tuple frozen<tuple<int, text, float>>)")
     )
   }
 
@@ -202,4 +206,9 @@ object Main {
     println(s"RESULT : $id $address $album $artist $data $good $justMap $members $published $rating $tags $title")
   }
 
+  private def insertSelectTuple(client: CqlClient) {
+    val query = Requests.Query("INSERT INTO demodb.tuple_test (the_key, the_tuple) VALUES (2, (1, 'abc', 3.14))")
+    sendAndPrint(client, query)
+
+  }
 }

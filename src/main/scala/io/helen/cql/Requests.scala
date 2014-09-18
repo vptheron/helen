@@ -21,6 +21,7 @@ object Requests {
 
   sealed trait Request
 
+  // TODO add support for compression
   case object Startup extends Request
 
   case class AuthResponse(token: ByteString) extends Request
@@ -37,7 +38,9 @@ object Requests {
 
   case class Batch(queries: Seq[BatchQuery],
                    batchType: BatchType = LoggedBatch,
-                   consistency: Consistency = One) extends Request
+                   consistency: Consistency = One,
+                   serialConsistency: Option[Consistency] = None,
+                   defaultTimestamp: Option[Long] = None) extends Request
 
   case class Register(topologyChange: Boolean = false,
                       statusChange: Boolean = false,
@@ -72,7 +75,8 @@ object Requests {
                              skipMetadata: Boolean = false,
                              pageSize: Option[Int] = None,
                              pagingState: Option[ByteString] = None,
-                             serialConsistency: Option[Consistency] = None)
+                             serialConsistency: Option[Consistency] = None,
+                             defaultTimestamp: Option[Long] = None)
 
   sealed trait BatchType
 
