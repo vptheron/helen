@@ -23,6 +23,8 @@ private[cql] object Frames {
 
   import Body._
 
+  val allStreams: Set[Short] = (0 until 32768).map(_.toShort).toSet
+
   def fromRequest(stream: Short, req: Request): ByteString = {
     val (opsCode, body) =
       req match {

@@ -31,6 +31,7 @@ class ActorBackedCqlClient(host: String, port: Int, connections: Int)
   private implicit val timeout = Timeout(10, TimeUnit.SECONDS)
   private val actor = system.actorOf(NodeConnectionActor.props(host, port, connections), "node-connection")
 
+  Thread.sleep(2000) //TODO awful!
   override def send(request: Request): Future[Response] = (actor ? request).mapTo[Response]
 
   override def close(){

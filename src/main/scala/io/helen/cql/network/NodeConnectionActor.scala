@@ -16,16 +16,10 @@
 package io.helen.cql.network
 
 import java.net.InetSocketAddress
-import java.util.concurrent.TimeUnit
 
 import akka.actor._
-import akka.pattern.ask
 import akka.routing.{ActorRefRoutee, RoundRobinRoutingLogic, Router}
-import akka.util.Timeout
-import io.helen.cql.Requests
 import io.helen.cql.Requests.Request
-
-import scala.concurrent.Await
 
 private[cql] class NodeConnectionActor(node: InetSocketAddress, connectionCount: Int) extends Actor {
 
@@ -44,7 +38,7 @@ private[cql] class NodeConnectionActor(node: InetSocketAddress, connectionCount:
 
     case NodeConnectionActor.Close =>
       println("Received Close request, terminating all routees.")
-      router.routees.foreach(_.send(SingleConnectionActor.Terminate, self))
+      router.routees.foreach(_.send(SingleConnectionActor.CloseConnection, self))
       context.become(closing())
   }
 
@@ -61,9 +55,7 @@ private[cql] class NodeConnectionActor(node: InetSocketAddress, connectionCount:
 
   private def newWatchedActor: ActorRefRoutee = {
     val r = context.actorOf(SingleConnectionActor.props(node))
-    implicit val timeout = Timeout(5, TimeUnit.SECONDS)
     context.watch(r)
-    Await.ready(r ? Requests.Startup, timeout.duration)   //FIXME clearly a problem here if connection fails
     ActorRefRoutee(r)
   }
 }

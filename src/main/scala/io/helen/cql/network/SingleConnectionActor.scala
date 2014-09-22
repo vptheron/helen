@@ -18,78 +18,64 @@ package io.helen.cql.network
 import java.net.InetSocketAddress
 
 import akka.actor._
-import akka.io.Tcp._
-import akka.io.{IO, Tcp}
+import akka.actor.SupervisorStrategy._
 import io.helen.cql.Frames
 import io.helen.cql.Requests.Request
+import io.helen.cql.Requests
 
-private[cql] class SingleConnectionActor(address: InetSocketAddress) extends Actor with Stash {
+private[cql] class SingleConnectionActor(address: InetSocketAddress) extends Actor {
 
   import SingleConnectionActor._
 
-  implicit val sys = context.system
-
-  IO(Tcp) ! Connect(address)
-
-  override def receive = {
-    case Connected(_, _) =>
-      val connection = sender()
-      connection ! Register(self)
-      unstashAll()
-      context.become(ready(connection, allStreams, Map.empty))
-
-    case CommandFailed(_: Connect) =>
-      //TODO report failure to supervisor
-      context stop self
-
-    case other => stash()
-  }
-
-  private def ready(connection: ActorRef, availableStreams: Set[Short], processing: Map[Short, ActorRef]): Receive = {
-    case req: Request => availableStreams.headOption match {
-      case None =>
-        //TODO could use stash to  store the request and try later
-        sender ! Status.Failure(new Exception("Connection reached max pending requests."))
-
-      case Some(stream) =>
-        val stream = availableStreams.head
-        connection ! Write(Frames.fromRequest(stream, req))
-        context.become(ready(connection, availableStreams.tail, processing + (stream -> sender)))
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 3) {
+      case _: ActorInitializationException => Stop
+      case _: ActorKilledException => Stop
+      case _: RawConnectionActor.CantConnect => Stop
+      case _: RawConnectionActor.ConnectionClosed => Restart
+      case _ => Escalate
     }
 
-    case CommandFailed(Write(data, _)) =>
+  private val connection = context.actorOf(RawConnectionActor.props(address, self))
+
+  private def waitingForInitialized: Receive = {
+    case RawConnectionActor.Initialized =>
+      self ! Requests.Startup
+      context.become(handlingRequests(Frames.allStreams, Map.empty))
+
+    case other => sender ! Status.Failure(new Exception("Opening connection, not accepting request yet."))
+  }
+
+  private def handlingRequests(availableStreams: Set[Short], processing: Map[Short, ActorRef]): Receive = {
+    case req: Request => availableStreams.headOption match {
+      case None => sender ! Status.Failure(new Exception("Connection reached max pending requests."))
+
+      case Some(stream) =>
+        connection ! RawConnectionActor.WriteRequest(Frames.fromRequest(stream, req))
+        context.become(handlingRequests(availableStreams.tail, processing + (stream -> sender)))
+    }
+
+    case RawConnectionActor.WriteFailed(data) =>
       val (stream, request) = Frames.fromBytes(data)
       processing.get(stream).foreach(_ ! Status.Failure(new Exception("Failed to send request: " + request)))
-      context.become(ready(connection, availableStreams + stream, processing - stream))
+      context.become(handlingRequests(availableStreams + stream, processing - stream))
 
-    case Received(data) =>
+    case RawConnectionActor.WriteResponse(data) =>
       val (stream, response) = Frames.fromBytes(data)
       processing.get(stream).foreach(_ ! Status.Success(response))
-      context.become(ready(connection, availableStreams + stream, processing - stream))
+      context.become(handlingRequests(availableStreams + stream, processing - stream))
 
-    case Terminate =>
+    case CloseConnection =>
       processing foreach {
         case (_, client) => client ! Status.Failure(new Exception("Connection closed by client."))
       }
-      connection ! Close
-      context.become(closing(sender()))
-
-    case _: ConnectionClosed =>
-      processing foreach {
-        case (_, client) => client ! Status.Failure(new Exception("Connection unexpectedly closed."))
-      }
+      connection ! RawConnectionActor.CloseRequest
       context stop self
 
-    case other => sender ! Status.Failure(new Exception("Unrecognized message."))
+    case _ => println("Received unknown message")
   }
 
-  private def closing(client: ActorRef): Receive = {
-    case _: ConnectionClosed => context stop self
-
-    case other =>
-      sender ! Status.Failure(new Exception("This connection is closing and not accepting new requests."))
-  }
-
+  override def receive = waitingForInitialized
 }
 
 private[cql] object SingleConnectionActor {
@@ -98,7 +84,8 @@ private[cql] object SingleConnectionActor {
 
   def props(address: InetSocketAddress): Props = Props(new SingleConnectionActor(address))
 
-  case object Terminate
+  case object ConnectionOpen
 
-  private val allStreams: Set[Short] = (0 until 32768).map(_.toShort).toSet
+  case object CloseConnection
+
 }
