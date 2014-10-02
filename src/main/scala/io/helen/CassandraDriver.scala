@@ -4,6 +4,6 @@ import java.net.InetSocketAddress
 
 trait CassandraDriver {
 
-  def newCluster(nodes: Iterable[InetSocketAddress]): CassandraCluster
+//  def newCluster(nodes: Iterable[InetSocketAddress]): CassandraCluster
 
 }
