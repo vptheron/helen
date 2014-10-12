@@ -25,6 +25,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+  "org.typelevel" %% "scodec-bits" % "1.0.4",
   "com.typesafe.akka" %% "akka-actor" % "2.3.6",
   "joda-time" % "joda-time" % "2.4",
   "org.joda" % "joda-convert" % "1.5",
