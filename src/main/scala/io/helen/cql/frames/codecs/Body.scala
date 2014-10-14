@@ -20,154 +20,142 @@ import java.util.UUID
 
 import scodec.bits.ByteVector
 
-import scala.util.Try
-
 object Body {
 
-  def fromInt(i: Int): ByteVector = ByteVector.fromInt(i)
+  def writeInt(i: Int): ByteVector = ByteVector.fromInt(i)
 
-  def toInt(data: ByteVector): Try[(Int, ByteVector)] = Try {
-    data.
+  def readInt(data: ByteVector): (Int, ByteVector) = {
     val (iAsBytes, rem) = data.splitAt(4)
-    ByteVector(iAsBytes).toInt() -> rem
+    iAsBytes.toInt() -> rem
   }
 
-  def fromLong(l: Long): ByteSeq = ByteVector.fromLong(l).toSeq
+  def writeLong(l: Long): ByteVector = ByteVector.fromLong(l)
 
-  def toLong(data: ByteSeq): Try[(Long, ByteSeq)] = Try {
+  def readLong(data: ByteVector): (Long, ByteVector) = {
     val (lAsBytes, rem) = data.splitAt(8)
-    ByteVector(lAsBytes).toLong() -> rem
+    lAsBytes.toLong() -> rem
   }
 
-  def fromShort(s: Short): ByteSeq = ByteVector.fromShort(s).toSeq
+  def writeShort(s: Short): ByteVector = ByteVector.fromShort(s)
 
-  def toShort(data: ByteSeq): Try[(Short, ByteSeq)] = Try {
+  def readShort(data: ByteVector): (Short, ByteVector) = {
     val (sAsBytes, rem) = data.splitAt(2)
-    ByteVector(sAsBytes).toShort() -> rem
+    sAsBytes.toShort() -> rem
   }
 
-  def fromString(s: String): ByteSeq = {
-    val sAsBytes = ByteVector(s.getBytes("UTF-8")).toSeq
-    fromShort(sAsBytes.length.toShort) ++ sAsBytes
+  def writeString(s: String): ByteVector = {
+    val sAsBytes = ByteVector(s.getBytes("UTF-8"))
+    writeShort(sAsBytes.length.toShort) ++ sAsBytes
   }
 
-  def toString(data: ByteSeq): Try[(String, ByteSeq)] = for {
-    (stringSize, rem) <- toShort(data)
-    (stringAsBytes, left) <- rem.splitAt(stringSize)
-  } yield new String(stringAsBytes, "UTF-8") -> left
-
-  def fromLongString(s: String): ByteSeq = {
-    val sAsBytes = ByteVector(s.getBytes("UTF-8")).toSeq
-    fromInt(sAsBytes.length) ++ sAsBytes
+  def readString(data: ByteVector): (String, ByteVector) = {
+    val (stringSize, rem1) = readShort(data)
+    val (stringAsBytes, rem2) = rem1.splitAt(stringSize)
+    new String(stringAsBytes.toArray, "UTF-8") -> rem2
   }
 
-  def toLongString(data: ByteSeq): Try[(String, ByteSeq)] = for {
-    (stringSize, rem) <- toInt(data)
-    (stringAsBytes, left) <- rem.splitAt(stringSize)
-  } yield new String(stringAsBytes, "UTF-8") -> left
-
-  def fromUuid(id: UUID): ByteSeq =
-    (ByteVector.fromLong(id.getMostSignificantBits) ++ ByteVector.fromLong(id.getLeastSignificantBits)).toSeq
-
-  def toUuid(data: ByteSeq): Try[(UUID, ByteSeq)] = for {
-    (mostSignBits, rest) <- toLong(data)
-    (leastSignBits, rest2) <- toLong(rest)
-  } yield new UUID(mostSignBits, leastSignBits) -> rest2.toSeq
-
-  def fromStringList(ss: Seq[String]): ByteSeq = {
-    (ByteVector.fromShort(ss.length.toShort) ++
-      ss.foldLeft(ByteVector.empty)((acc, s) => acc ++ ByteVector(fromString(s)))
-      ).toSeq
+  def writeLongString(s: String): ByteVector = {
+    val sAsBytes = ByteVector(s.getBytes("UTF-8"))
+    writeInt(sAsBytes.length) ++ sAsBytes
   }
 
-  def toStringList(data: ByteSeq): Try[(Seq[String], ByteSeq)] = for {
-    (listSize, rest) <- toShort(data)
-
+  def readLongString(data: ByteVector): (String, ByteVector) = {
+    val (stringSize, rem1) = readInt(data)
+    val (stringAsBytes, rem2) = rem1.splitAt(stringSize)
+    new String(stringAsBytes.toArray, "UTF-8") -> rem2
   }
 
-//    Try {
-//    val it = ByteString(data).iterator
-//    val listLength = it.getShort
-//    (0 until listLength).map(_ => toString(dataIterator))
-//  }
+  def writeUuid(id: UUID): ByteVector =
+    ByteVector.fromLong(id.getMostSignificantBits) ++ ByteVector.fromLong(id.getLeastSignificantBits)
 
-  def bytes(b: ByteString): ByteString = {
-    new ByteStringBuilder()
-      .putInt(b.length)
-      .append(b)
-      .result()
+  def readUuid(data: ByteVector): (UUID, ByteVector) = {
+    val (mostSignBits, rem1) = readLong(data)
+    val (leastSignBits, rem2) = readLong(rem1)
+    new UUID(mostSignBits, leastSignBits) -> rem2
   }
 
-  def readBytes(dataIterator: ByteIterator): Option[ByteString] = {
-    val size = dataIterator.getInt
-    if (size < 0)
-      None
-    else {
-      val buffer = new Array[Byte](size)
-      dataIterator.getBytes(buffer)
-      Some(ByteString(buffer))
+  def writeStringList(ss: Seq[String]): ByteVector =
+    ByteVector.fromShort(ss.length.toShort) ++
+      ss.foldLeft(ByteVector.empty)((acc, s) => acc ++ writeString(s))
+
+  def readStringList(data: ByteVector): (Seq[String], ByteVector) = {
+    val (listSize, rest) = readShort(data)
+
+    def loop(itemsToRead: Int, acc: Seq[String], rem: ByteVector): (Seq[String], ByteVector) = itemsToRead match {
+      case 0 => (acc.reverse, rem)
+      case _ =>
+        val (newString, newRem) = readString(rem)
+        loop(itemsToRead - 1, newString +: acc, newRem)
     }
+
+    loop(listSize, Nil, rest)
   }
 
-  def shortBytes(b: ByteString): ByteString = {
-    new ByteStringBuilder()
-      .putShort(b.length)
-      .append(b)
-      .result()
+  def writeBytes(bytes: ByteVector): ByteVector = ByteVector.fromInt(bytes.length) ++ bytes
+
+  def readBytes(data: ByteVector): (ByteVector, ByteVector) = {
+    val (size, rem1) = readInt(data)
+    rem1.splitAt(size)
   }
 
-  def readShortBytes(dataIterator: ByteIterator): ByteString = {
-    val buffer = new Array[Byte](dataIterator.getShort)
-    dataIterator.getBytes(buffer)
-    ByteString(buffer)
+  def writeShortBytes(bytes: ByteVector): ByteVector = ByteVector.fromShort(bytes.length.toShort) ++ bytes
+
+  def readShortBytes(data: ByteVector): (ByteVector, ByteVector) = {
+    val (size, rem1) = readShort(data)
+    rem1.splitAt(size)
   }
 
-  //TODO option
-
-  //TODO option list
-
-  def address(a: InetSocketAddress): ByteString = {
+  def writeInet(a: InetSocketAddress): ByteVector = {
     val ip = a.getAddress.getAddress
-    new ByteStringBuilder()
-      .putByte(ip.length.toByte)
-      .putBytes(ip)
-      .putInt(a.getPort)
-      .result()
+    ByteVector(ip.length.toByte) ++ ByteVector(ip) ++ ByteVector.fromInt(a.getPort)
   }
 
-  def readAddress(dataIterator: ByteIterator): InetSocketAddress = {
-    val buffer = new Array[Byte](dataIterator.getByte)
-    dataIterator.getBytes(buffer)
-    val ip = InetAddress.getByAddress(buffer)
-    new InetSocketAddress(ip, dataIterator.getInt)
+  def readInet(data: ByteVector): (InetSocketAddress, ByteVector) = {
+    val (ipSize, rem1) = data.splitAt(1)
+    val (addrAsBytes, rem2) = rem1.splitAt(ipSize.toInt())
+    val ip = InetAddress.getByAddress(addrAsBytes.toArray)
+    val (port, rem3) = readInt(rem2)
+    new InetSocketAddress(ip, port) -> rem3
   }
 
-  def stringMap(m: Map[String, String]): ByteString = {
-    val builder = new ByteStringBuilder()
-    builder.putShort(m.size)
-    m.foreach(kv => builder.append(string(kv._1)).append(string(kv._2)))
-    builder.result()
+  def writeStringMap(m: Map[String, String]): ByteVector = {
+    ByteVector.fromShort(m.size.toShort) ++
+      m.foldLeft(ByteVector.empty)((acc, kv) => acc ++ writeString(kv._1) ++ writeString(kv._2))
   }
 
-  def readStringMap(dataIterator: ByteIterator): Map[String, String] = {
-    val mapSize = dataIterator.getShort
-    (0 until mapSize)
-      .map(_ => readString(dataIterator) -> readString(dataIterator))
-      .toMap
+  def readStringMap(data: ByteVector): (Map[String, String], ByteVector) = {
+    val (mapSize, rest) = readShort(data)
+
+    def loop(itemsToRead: Int, acc: Map[String, String], rem: ByteVector): (Map[String, String], ByteVector) =
+      itemsToRead match {
+        case 0 => (acc, rem)
+        case _ =>
+          val (newKey, newRem) = readString(rem)
+          val (newValue, newRem2) = readString(newRem)
+          loop(itemsToRead - 1, acc + (newKey -> newValue), newRem2)
+      }
+
+    loop(mapSize, Map.empty, rest)
   }
 
-  def stringMultiMap(m: Map[String, Seq[String]]): ByteString = {
-    val builder = new ByteStringBuilder()
-    builder.putShort(m.size)
-    m.foreach(kv => builder.append(string(kv._1)).append(stringList(kv._2)))
-    builder.result()
+  def writeStringMultiMap(m: Map[String, Seq[String]]): ByteVector = {
+    ByteVector.fromShort(m.size.toShort) ++
+      m.foldLeft(ByteVector.empty)((acc, kv) => acc ++ writeString(kv._1) ++ writeStringList(kv._2))
   }
 
-  def readStringMultiMap(dataIterator: ByteIterator): Map[String, Seq[String]] = {
-    val mapSize = dataIterator.getShort
-    (0 until mapSize)
-      .map(_ => readString(dataIterator) -> readStringList(dataIterator))
-      .toMap
+  def readStringMultiMap(data: ByteVector): (Map[String, Seq[String]], ByteVector) = {
+    val (mapSize, rem) = readShort(data)
+
+    def loop(itemsToRead: Int, acc: Map[String, Seq[String]], rem: ByteVector): (Map[String, Seq[String]], ByteVector) =
+      itemsToRead match {
+        case 0 => (acc, rem)
+        case _ =>
+          val (newKey, newRem) = readString(rem)
+          val (newValue, newRem2) = readStringList(newRem)
+          loop(itemsToRead - 1, acc + (newKey -> newValue), newRem2)
+      }
+
+    loop(mapSize, Map.empty, rem)
   }
 
 }
