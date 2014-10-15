@@ -144,18 +144,18 @@ object Body {
   }
 
   def readStringMultiMap(data: ByteVector): (Map[String, Seq[String]], ByteVector) = {
-    val (mapSize, rem) = readShort(data)
+    val (mapSize, firstRem) = readShort(data)
 
     def loop(itemsToRead: Int, acc: Map[String, Seq[String]], rem: ByteVector): (Map[String, Seq[String]], ByteVector) =
       itemsToRead match {
         case 0 => (acc, rem)
         case _ =>
-          val (newKey, newRem) = readString(rem)
-          val (newValue, newRem2) = readStringList(newRem)
-          loop(itemsToRead - 1, acc + (newKey -> newValue), newRem2)
+          val (newKey, rem2) = readString(rem)
+          val (newValue, rem3) = readStringList(rem2)
+          loop(itemsToRead - 1, acc + (newKey -> newValue), rem3)
       }
 
-    loop(mapSize, Map.empty, rem)
+    loop(mapSize, Map.empty, firstRem)
   }
 
 }
