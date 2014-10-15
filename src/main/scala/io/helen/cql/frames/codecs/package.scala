@@ -33,7 +33,7 @@ package object codecs {
     case Authenticate(authenticator) => (0x03, writeString(authenticator))
     case Supported(options) => (0x06, writeStringMultiMap(options))
     case Result(data) => (0x08, ByteVector.empty) //FIXME
-    case Event(event) => (0x0C, ByteVector.empty) //FIXME
+    case Event(event) => (0x0C, serializeEvent(event))
     case AuthChallenge(token) => (0x0E, writeBytes(token))
     case AuthSuccess(token) => (0x10, writeBytes(token))
   }
@@ -139,6 +139,18 @@ package object codecs {
         (if (register.statusChange) List("STATUS_CHANGE") else Nil) ++
         (if (register.schemaChange) List("SCHEMA_CHANGE") else Nil)
     writeStringList(events)
+  }
+
+  private def serializeEvent(event: EventData): ByteVector = event match {
+    case TopologyChange(newNode, node) =>
+      writeString("TOPOLOGY_CHANGE") ++ writeString(if(newNode) "NEW_NODE" else "REMOVED_NODE") ++ writeInet(node)
+    case StatusChange(nodeUp, node) =>
+      writeString("STATUS_CHANGE") ++ writeString(if(nodeUp) "UP" else "DOWN") ++ writeInet(node)
+    case s: SchemaChange => writeString("SCHEMA_CHANGE") ++ serializeSchemaChange(s)
+  }
+
+  private def serializeSchemaChange(s: SchemaChange): ByteVector = {
+    ???
   }
 
   def deserialize(data: ByteVector): Frame = ???
