@@ -49,10 +49,12 @@ package object frames {
   case class Batch(queries: Seq[BatchQuery],
                    batchType: BatchType = LoggedBatch,
                    consistency: Consistency = One,
-                   serialConsistency: Consistency = Serial,
+                   serialConsistency: Option[Consistency] = None,
                    defaultTimestamp: Option[Long] = None) extends Request {
 
-    require(serialConsistency == Serial || serialConsistency == LocalSerial)
+    val withNames: Boolean = queries exists { q =>
+      q.valueNames.nonEmpty
+    }
   }
 
   case class Register(topologyChange: Boolean = false,
@@ -66,11 +68,13 @@ package object frames {
                              skipMetadata: Boolean = false,
                              pageSize: Option[Int] = None,
                              pagingState: Option[ByteVector] = None,
-                             serialConsistency: Consistency = Serial,
+                             serialConsistency: Option[Consistency] = None,
                              defaultTimestamp: Option[Long] = None) {
 
     require(valueNames.isEmpty || valueNames.size == values.size)
-    require(serialConsistency == Serial || serialConsistency == LocalSerial)
+    require(defaultTimestamp.isEmpty || defaultTimestamp.get >= 0)
+    require(serialConsistency.isEmpty ||
+      (Serial :: LocalSerial :: Nil).contains(serialConsistency.get))
   }
 
   sealed trait BatchType
@@ -81,7 +85,10 @@ package object frames {
 
   case object CounterBatch extends BatchType
 
-  sealed trait BatchQuery
+  sealed trait BatchQuery {
+    def values: Seq[ByteVector]
+    def valueNames: Seq[String]
+  }
 
   case class PreparedBatchQuery(preparedId: ByteVector,
                                 values: Seq[ByteVector],
