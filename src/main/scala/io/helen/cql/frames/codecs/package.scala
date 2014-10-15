@@ -28,13 +28,14 @@ package object codecs {
     case b: Batch => (0x0D, serializeBatch(b))
     case r: Register => (0x0B, serializeRegister(r))
     // Responses
-    //    case Error =>
-    //    case Ready =>
-    //    case Authenticate =>
-    //    case Supported =>
-    //    case Event =>
-    //    case AuthChallenge =>
-    //    case AuthSuccess =>
+    case Error(code, msg) => (0x00, writeInt(code) ++ writeString(msg))
+    case Ready => (0x02, ByteVector.empty)
+    case Authenticate(authenticator) => (0x03, writeString(authenticator))
+    case Supported(options) => (0x06, writeStringMultiMap(options))
+    case Result(data) => (0x08, ByteVector.empty) //FIXME
+    case Event(event) => (0x0C, ByteVector.empty) //FIXME
+    case AuthChallenge(token) => (0x0E, writeBytes(token))
+    case AuthSuccess(token) => (0x10, writeBytes(token))
   }
 
   private def serializeQuery(query: Query): ByteVector =
@@ -128,7 +129,7 @@ package object codecs {
       }
 
     kindAndId ++
-    writeShort(query.values.size.toShort) ++
+      writeShort(query.values.size.toShort) ++
       serializedValues.foldLeft(ByteVector.empty)(_ ++ _)
   }
 

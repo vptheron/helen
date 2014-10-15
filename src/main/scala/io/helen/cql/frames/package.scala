@@ -105,7 +105,7 @@ package object frames {
   }
 
   // Responses
-  sealed trait Response
+  sealed trait Response extends Message
 
   case class Error(code: Int, message: String) extends Response
 
@@ -113,7 +113,7 @@ package object frames {
 
   case class Authenticate(authenticator: String) extends Response
 
-  case class Supported(options: Map[String, Set[String]]) extends Response
+  case class Supported(options: Map[String, Seq[String]]) extends Response
 
   case class Result(data: ResultContent) extends Response
 
