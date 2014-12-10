@@ -6,6 +6,8 @@ A fully asynchronous driver for [Apache Cassandra](http://cassandra.apache.org/)
 
 This driver is built and tested with Cassandra 2.1.0 and uses version 3 of the CQL binary protocol.
 
+This project is mostly used to experiment with Akka-IO and diverse interesting libraries. It is *not* to be used since the API will most likely change dramatically.
+
 ## Low level API
 
 For now, the only available API. It provides an easy way to create a connection to a Cassandra node and to send/receive requests/responses.
@@ -21,10 +23,10 @@ val system = ActorSystem("helen-system")
 Then you can instantiate an `ActorBackedCqlClient`:
 
 ```scala
-val client: CqlClient = new ActorBackedCqlClient("localhost", 9042, 3)(system)
+val client: CqlClient = new ActorBackedCqlClient("localhost", 9042)(system)
 ```
 
-The `CqlClient` above will open 3 connections to `localhost:9042`. The first message to start a CQL session (`Startup`) is automatically sent.
+The `CqlClient` above will open 1 connection to `localhost:9042`. The first message to start a CQL session (`Startup`) is automatically sent.
 
 ### Sending requests
 
@@ -37,7 +39,7 @@ client.send(Requests.Query("INSERT INTO demodb.songs (id, title, album, artist, 
 
 Other types of request are available like `Prepare`, `Execute`, `Batch`, etc.
 
-**Global Keyspace**: the `CqlClient` internally maintains several connections to the Cassandra node, you should *not* issue a `use keyspace` query since it will only be sent over one of the connections.
+**Global Keyspace**: the `CqlClient` internally maintains one single connection to the Cassandra node, you can issue a `use keyspace` query to set the context of this connection.
 
 ### Parameterized statements
 
