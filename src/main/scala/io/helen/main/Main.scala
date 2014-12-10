@@ -39,7 +39,7 @@ object Main {
 
     val system = ActorSystem("helen-system")
 
-    val client = new ActorBackedCqlClient("localhost", 9042, 3)(system)
+    val client = new ActorBackedCqlClient("localhost", 9042)(system)
 
     //    sendAndPrint(client, Requests.Startup)
     println("1 ***********")

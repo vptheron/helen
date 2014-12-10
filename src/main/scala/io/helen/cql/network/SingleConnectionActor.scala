@@ -22,6 +22,7 @@ import akka.actor.SupervisorStrategy._
 import io.helen.cql.Frames
 import io.helen.cql.Requests.Request
 import io.helen.cql.Requests
+import io.helen.cql.Responses.Ready
 
 private[cql] class SingleConnectionActor(address: InetSocketAddress) extends Actor {
 
@@ -72,7 +73,7 @@ private[cql] class SingleConnectionActor(address: InetSocketAddress) extends Act
       connection ! RawConnectionActor.CloseRequest
       context stop self
 
-    case _ => println("Received unknown message")
+    case m => println("Received unknown message: "+m)
   }
 
   override def receive = waitingForInitialized
@@ -83,8 +84,6 @@ private[cql] object SingleConnectionActor {
   def props(host: String, port: Int): Props = props(new InetSocketAddress(host, port))
 
   def props(address: InetSocketAddress): Props = Props(new SingleConnectionActor(address))
-
-  case object ConnectionOpen
 
   case object CloseConnection
 

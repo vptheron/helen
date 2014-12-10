@@ -25,16 +25,16 @@ import io.helen.cql.Responses.Response
 
 import scala.concurrent.{Await, Future}
 
-class ActorBackedCqlClient(host: String, port: Int, connections: Int)
+class ActorBackedCqlClient(host: String, port: Int)
                           (implicit system: ActorSystem) extends CqlClient {
 
   private implicit val timeout = Timeout(10, TimeUnit.SECONDS)
-  private val actor = system.actorOf(NodeConnectionActor.props(host, port, connections), "node-connection")
+  private val actor = system.actorOf(SingleConnectionActor.props(host, port))
 
   Thread.sleep(2000) //TODO awful!
   override def send(request: Request): Future[Response] = (actor ? request).mapTo[Response]
 
   override def close(){
-    Await.result(gracefulStop(actor, timeout.duration, NodeConnectionActor.Close), timeout.duration)
+    Await.result(gracefulStop(actor, timeout.duration, SingleConnectionActor.CloseConnection), timeout.duration)
   }
 }
